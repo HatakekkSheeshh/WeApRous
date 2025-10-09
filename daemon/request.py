@@ -121,6 +121,7 @@ class Request():
 
     def prepare_body(self, data, files, json=None):
         self.prepare_content_length(self.body)
+        body = data or files    # adjusted by Hieu
         self.body = body
         #
         # TODO prepare the request authentication

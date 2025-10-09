@@ -39,7 +39,7 @@ import socket
 import threading
 import argparse
 import re
-from urlparse import urlparse
+from urllib.parse import urlparse
 from collections import defaultdict
 
 from daemon import create_proxy
@@ -57,24 +57,58 @@ def parse_virtual_hosts(config_file):
 
     with open(config_file, 'r') as f:
         config_text = f.read()
+        
+    """
+    config_text = "
+    host "192.168.56.103:8080" {
+        proxy_pass http://192.168.56.103:9000;
+    }
+
+    host "app1.local" {
+        proxy_pass http://192.168.56.103:9001;
+    }
+
+    host "app2.local" {
+        proxy_set_header Host $host;
+
+        proxy_pass http://192.168.56.210:9002;
+        proxy_pass http://192.168.56.220:9002;
+        
+
+        dist_policy round-robin
+    }
+    "
+    """
 
     # Match each host block
     host_blocks = re.findall(r'host\s+"([^"]+)"\s*\{(.*?)\}', config_text, re.DOTALL)
+
+    print(f"host_blocks: {host_blocks}")
 
     dist_policy_map = ""
 
     routes = {}
     for host, block in host_blocks:
+        print(f"Parsing host: {host}")
+        print(f"Block content:\n{block}")
+        
         proxy_map = {}
 
         # Find all proxy_pass entries
         proxy_passes = re.findall(r'proxy_pass\s+http://([^\s;]+);', block)
+        print(f"  proxy_passes: {proxy_passes}")
+        
         map = proxy_map.get(host,[])
+        print(f"  existing map: {map}")
+        
         map = map + proxy_passes
+        print(f"  updated map: {map}")
+        
         proxy_map[host] = map
 
         # Find dist_policy if present
         policy_match = re.search(r'dist_policy\s+(\w+)', block)
+        print(f"  dist_policy match: {policy_match}")
         if policy_match:
             dist_policy_map = policy_match.group(1)
         else: #default policy is round_robin
@@ -97,7 +131,7 @@ def parse_virtual_hosts(config_file):
             routes[host] = (proxy_map.get(host,[]), dist_policy_map)
 
     for key, value in routes.items():
-        print key, value
+        print(f"{key}: {value}")
     return routes
 
 
