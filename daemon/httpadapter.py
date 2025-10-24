@@ -105,54 +105,6 @@ class HttpAdapter:
         # Handle the request
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
-
-        # ========== TASK 2: WEAPROUS ROUTE HANDLERS (PRIORITY) ==========
-        # Check if there's a WeApRous route handler first
-        if req.hook:
-            print("[HttpAdapter] WeApRous hook in route-path METHOD {} PATH {}".format(req.hook._route_path, req.hook._route_methods))
-            
-            # Extract request body for JSON APIs
-            body_data = ""
-            if '\r\n\r\n' in msg:
-                body_data = msg.split('\r\n\r\n', 1)[1]
-            
-            # Call the route handler
-            try:
-                result = req.hook(headers=req.headers, body=body_data)
-                
-                # Build JSON response
-                if result:
-                    response_body = result if isinstance(result, str) else str(result)
-                else:
-                    response_body = '{"status": "success"}'
-                
-                response_header = (
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: application/json\r\n"
-                    "Content-Length: {}\r\n"
-                    "Access-Control-Allow-Origin: *\r\n"
-                    "\r\n"
-                ).format(len(response_body))
-                
-                response = response_header + response_body
-                conn.sendall(response.encode('utf-8'))
-                conn.close()
-                return
-                
-            except Exception as e:
-                print("[HttpAdapter] Error in route handler: {}".format(e))
-                error_response = '{{"status": "error", "message": "{}"}}'.format(str(e))
-                response_header = (
-                    "HTTP/1.1 500 Internal Server Error\r\n"
-                    "Content-Type: application/json\r\n"
-                    "Content-Length: {}\r\n"
-                    "\r\n"
-                ).format(len(error_response))
-                
-                response = response_header + error_response
-                conn.sendall(response.encode('utf-8'))
-                conn.close()
-                return
         
         # ========== TASK 1: COOKIE SESSION AUTHENTICATION ==========
         # Only apply cookie session for non-WeApRous requests (HTTP server)
@@ -253,6 +205,54 @@ class HttpAdapter:
                 print("[HttpAdapter] Access granted - Valid cookie found")
         
         # ========== END TASK 1 ==========
+
+        # ========== TASK 2: WEAPROUS ROUTE HANDLERS (PRIORITY) ==========
+        # Check if there's a WeApRous route handler first
+        if req.hook:
+            print("[HttpAdapter] WeApRous hook in route-path METHOD {} PATH {}".format(req.hook._route_path, req.hook._route_methods))
+            
+            # Extract request body for JSON APIs
+            body_data = ""
+            if '\r\n\r\n' in msg:
+                body_data = msg.split('\r\n\r\n', 1)[1]
+            
+            # Call the route handler
+            try:
+                result = req.hook(headers=req.headers, body=body_data)
+                
+                # Build JSON response
+                if result:
+                    response_body = result if isinstance(result, str) else str(result)
+                else:
+                    response_body = '{"status": "success"}'
+                
+                response_header = (
+                    "HTTP/1.1 200 OK\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Content-Length: {}\r\n"
+                    "Access-Control-Allow-Origin: *\r\n"
+                    "\r\n"
+                ).format(len(response_body))
+                
+                response = response_header + response_body
+                conn.sendall(response.encode('utf-8'))
+                conn.close()
+                return
+                
+            except Exception as e:
+                print("[HttpAdapter] Error in route handler: {}".format(e))
+                error_response = '{{"status": "error", "message": "{}"}}'.format(str(e))
+                response_header = (
+                    "HTTP/1.1 500 Internal Server Error\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Content-Length: {}\r\n"
+                    "\r\n"
+                ).format(len(error_response))
+                
+                response = response_header + error_response
+                conn.sendall(response.encode('utf-8'))
+                conn.close()
+                return
 
         # Build response for regular HTTP requests
         response = resp.build_response(req)
