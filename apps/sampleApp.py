@@ -3,10 +3,15 @@ import json
 
 from daemon.weaprous import WeApRous
 
-
-# def create_sampleapp():
-
+# Initialize the WeApRous app
 app = WeApRous()
+
+# Global data structures for tracking
+peers_list = []  # List of active peers: [{"username": str, "ip": str, "port": int, "channels": []}]
+channels_list = {}  # Dictionary of channels: {channel_name: [usernames]}
+users_credentials = {"admin": "password"}  # Simple user database
+peers_lock = threading.Lock()  # Thread-safe access to peers_list
+channels_lock = threading.Lock()  # Thread-safe access to channels_list
 
 @app.route(path='/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
@@ -20,6 +25,35 @@ def login(headers="guest", body="anonymous"):
     :param body (str): The request body or login payload.
     """
     print("[SampleApp] Logging in {} to {}".format(headers, body))
+    try:
+        # Parse JSON body
+        data = json.loads(body) if body and body != "anonymous" else {}
+        username = data.get("username", "")
+        password = data.get("password", "")
+        
+        print("[SampleApp] Login attempt: username={}".format(username))
+        
+        # Validate credentials
+        if username in users_credentials and users_credentials[username] == password:
+            response = {
+                "status": "success",
+                "message": "Login successful",
+                "username": username,
+                "token": "token_{}".format(username)  # Simple token generation
+            }
+            print("[SampleApp] Login successful for user: {}".format(username))
+        else:
+            response = {
+                "status": "failed",
+                "message": "Invalid username or password"
+            }
+            print("[SampleApp] Login failed for user: {}".format(username))
+        
+        return json.dumps(response)
+    
+    except Exception as e:
+        print("[SampleApp] Error in login: {}".format(e))
+        return json.dumps({"status": "error", "message": str(e)})
 
 @app.route('/hello', methods=['PUT'])
 def hello(headers, body):

@@ -35,13 +35,25 @@ PORT = 8000  # Default port
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
-    parser = argparse.ArgumentParser(prog='Backend', description='', epilog='Beckend daemon')
+    parser = argparse.ArgumentParser(
+        prog='Backend', 
+        description='Hybrid Chat Application - Tracker Server', 
+        epilog='Backend daemon'
+    )
     parser.add_argument('--server-ip', default='0.0.0.0')
     parser.add_argument('--server-port', type=int, default=PORT)
  
     args = parser.parse_args()
     ip = args.server_ip
     port = args.server_port
+
+    # Logs
+    print("*" * 60)
+    print("Starting Chat Tracker Server")
+    print("IP: {}".format(ip))
+    print("Port: {}".format(port))
+    print("*" * 60)
+    
 
     # Prepare and launch the RESTful application
     app.prepare_address(ip, port)

@@ -1,0 +1,12 @@
+python start_backend.py --server-ip 192.168.56.103 --server-port 9000
+
+
+> GET /login.html HTTP/1.1
+> Host: 192.168.1.12:8080
+> User-Agent: curl/8.x.x
+> Accept: */*
+
+
+curl.exe -v -H "Host: app1.local:8080" http://192.168.1.12:8080/
+
+header: Host: app1.local:8080

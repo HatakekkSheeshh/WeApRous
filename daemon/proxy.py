@@ -36,19 +36,15 @@ from .dictionary import CaseInsensitiveDict
 #: A dictionary mapping hostnames to backend IP and port tuples.
 #: Used to determine routing targets for incoming requests.
 
-"""
-PROXY_PASS = {
-    "192.168.56.103:8080": ('192.168.56.103', 9000),
-    "app1.local": ('192.168.56.103', 9001),
-    "app2.local": ('192.168.56.103', 9002),
-}
-"""
 PROXY_PASS = {
     "192.168.56.103:8080": ('192.168.56.103', 9000),
     "app1.local": ('192.168.56.103', 9001),
     "app2.local": ('192.168.56.103', 9002),
 }
 
+# Global
+rr_index = {}
+rr_lock = threading.Lock()
 
 def forward_request(host, port, request):
     """
@@ -95,12 +91,14 @@ def resolve_routing_policy(hostname, routes):
     :params port (int): port number of the request target server.
     :params routes (dict): dictionary mapping hostnames and location.
     """
-
-    print(hostname)
     proxy_map, policy = routes.get(hostname,('127.0.0.1:9000','round-robin'))
-    print(proxy_map)
-    print(policy)
 
+    """
+    route: 
+        [Host] 192.168.1.12:8080 == hostname: 192.168.1.12:8080 
+        => proxy_map: 192.168.1.12:9000
+        => policy: round-robin
+    """
     proxy_host = ''
     proxy_port = '9000'
     if isinstance(proxy_map, list):
@@ -114,10 +112,42 @@ def resolve_routing_policy(hostname, routes):
             proxy_host = '127.0.0.1'
             proxy_port = '9000'
         elif len(proxy_map) == 1:
+            """
+            Case:
+                host "192.168.56.103:8080" {
+                    proxy_pass http://192.168.56.103:9000;
+                }
+
+                host "app1.local" {
+                    proxy_pass http://192.168.56.103:9001;
+                }
+            Example:
+                proxy_map = [192.168.1.12:9000]
+                => proxy_host = 192.168.1.12
+                => proxy_port = 9000
+            """
             proxy_host, proxy_port = proxy_map[0].split(":", 2)
-        #elif: # apply the policy handling 
-        #   proxy_map
-        #   policy
+        elif len(proxy_map) > 1 and policy  == 'round-robin':
+            #elif: # apply the policy handling 
+            #   proxy_map
+            #   policy
+            """
+            Case:
+                host "app2.local" {
+                    proxy_set_header Host $host;
+
+                    proxy_pass http://192.168.56.210:9002;
+                    proxy_pass http://192.168.56.220:9002;
+					
+                    dist_policy round-robin
+                }
+            """
+            with rr_lock:
+                i = rr_index.get(hostname, 0)
+                upstream = proxy_map[i % len(proxy_map)]
+                rr_index[hostname] = i + 1
+            host, port = upstream.split(':', 1)
+            return host, port
         else:
             # Out-of-handle mapped host
             proxy_host = '127.0.0.1'
@@ -146,18 +176,36 @@ def handle_client(ip, port, conn, addr, routes):
     :params addr (tuple): client address (IP, port).
     :params routes (dict): dictionary mapping hostnames and location.
     """
+    print("*" * 60)
+    print("Start Handle Client")
 
+    """
+    Sample Request:
+        Start Handle Client
+        [request] GET /login.html HTTP/1.1
+        Host: 192.168.1.12:8080
+        Connection: keep-alive
+        Cache-Control: max-age=0
+        Upgrade-Insecure-Requests: 1
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8
+        Sec-GPC: 1
+        Accept-Language: en-US,en;q=0.5
+        Referer: http://192.168.1.12:8080/login
+        Accept-Encoding: gzip, deflate
+    """
     request = conn.recv(1024).decode()
-
+    
     # Extract hostname
     for line in request.splitlines():
         if line.lower().startswith('host:'):
-            hostname = line.split(':', 1)[1].strip()
+            hostname = line.split(':', 1)[1].strip() # 192.168.1.12:8080
 
-    print("[Proxy] {} at Host: {}".format(addr, hostname))
+    print("[Proxy] {} at Host: {} Port: {}".format(addr, hostname, port))
 
     # Resolve the matching destination in routes and need conver port
     # to integer value
+    # receive hostname from request's header
     resolved_host, resolved_port = resolve_routing_policy(hostname, routes)
     try:
         resolved_port = int(resolved_port)
@@ -165,7 +213,7 @@ def handle_client(ip, port, conn, addr, routes):
         print("Not a valid integer")
 
     if resolved_host:
-        print("[Proxy] Host name {} is forwarded to {}:{}".format(hostname,resolved_host, resolved_port))
+        print("[Proxy] Host name {} is forwarded to {}:{}".format(hostname, resolved_host, resolved_port))
         response = forward_request(resolved_host, resolved_port, request)        
     else:
         response = (
@@ -199,20 +247,28 @@ def run_proxy(ip, port, routes):
     try:
         proxy.bind((ip, port))
         proxy.listen(50)
-        print("[Proxy] Listening on IP {} port {}".format(ip,port))
-        while True:
-            conn, addr = proxy.accept()
-            
-            # Create a new thread for each client connection 
-            #multi-threading same with backend
-            client_thread = threading.Thread(
-                target=handle_client,
-                args=(ip, port, conn, addr, routes)
-            )
-            client_thread.daemon = True
-            client_thread.start()
+        print("[Proxy] Listening on IP {} port {}".format(ip, port))
+
+        try:
+            while True:
+                conn, addr = proxy.accept()
+                client_thread = threading.Thread(
+                    target=handle_client,
+                    args=(ip, port, conn, addr, routes),
+                    daemon=True
+                )
+                client_thread.start()
+        except KeyboardInterrupt:
+            print("\n[Proxy] Ctrl+C detected, shutting down...")
+
     except socket.error as e:
-      print("Socket error: {}".format(e))
+        print("Socket error: {}".format(e))
+    finally:
+        try:
+            proxy.close() 
+        except Exception as e:
+            print("Error closing proxy socket: {}".format(e))
+
 
 def create_proxy(ip, port, routes):
     """
