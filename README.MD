@@ -7,38 +7,38 @@
 
 ---
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-1. [Tổng quan](#tổng-quan)
-2. [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
-3. [Cài đặt](#cài-đặt)
-4. [Hướng dẫn sử dụng](#hướng-dẫn-sử-dụng)
+1. [Overview](#overview)
+2. [System Architecture](#system-architecture)
+3. [Installation](#installation)
+4. [Usage Guide](#usage-guide)
 5. [Demo Scenarios](#demo-scenarios)
 6. [API Documentation](#api-documentation)
 7. [Testing](#testing)
-8. [Kết quả đạt được](#kết-quả-đạt-được)
+8. [Results](#results)
 
 ---
 
-## 🎯 Tổng quan
+## 🎯 Overview
 
-Project này implement một **HTTP server** kết hợp **hybrid chat application**, bao gồm:
+This project implements an **HTTP server** combined with a **hybrid chat application**, including:
 
-### **Task 1: HTTP Server with Cookie Session (3 điểm)**
+### Task 1: HTTP Server with Cookie Session (3 points)
 - ✅ Cookie-based authentication
 - ✅ Session management
-- ✅ Access control cho protected resources
+- ✅ Access control for protected resources
 
-### **Task 2: Hybrid Chat Application (4 điểm)**
-- ✅ **Client-Server paradigm**: Tracker server quản lý peers
-- ✅ **Peer-to-Peer paradigm**: Direct messaging không qua server
-- ✅ **Channel management**: Join channels, broadcast messages
-- ✅ **Concurrency**: Thread-safe operations
-- ✅ **Error handling**: Robust error recovery
+### Task 2: Hybrid Chat Application (4 points)
+- ✅ Client-Server paradigm: Tracker server manages peers
+- ✅ Peer-to-Peer paradigm: Direct messaging without the server
+- ✅ Channel management: Join channels, broadcast messages
+- ✅ Concurrency: Thread-safe operations
+- ✅ Error handling: Robust recovery
 
 ---
 
-## 🏗️ Kiến trúc hệ thống
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -69,14 +69,14 @@ Project này implement một **HTTP server** kết hợp **hybrid chat applicati
 
 ---
 
-## 📦 Cài đặt
+## 📦 Installation
 
-### **Yêu cầu hệ thống:**
-- Python 2.7 hoặc Python 3.x
-- macOS, Linux, hoặc Windows
-- Không cần cài thêm thư viện (chỉ dùng standard library)
+### System Requirements
+- Python 2.7 or Python 3.x
+- macOS, Linux, or Windows
+- No extra dependencies required (standard library only)
 
-### **Cấu trúc thư mục:**
+### Directory Structure
 ```
 CO3094-weaprous2/
 ├── daemon/                    # Framework modules
@@ -108,62 +108,62 @@ CO3094-weaprous2/
 
 ---
 
-## 🚀 Hướng dẫn sử dụng
+## 🚀 Usage Guide
 
-### **1. Test Cookie Session (Task 1)**
+### 1. Test Cookie Session (Task 1)
 
-#### **Bước 1: Start Backend Server**
+#### Step 1: Start Backend Server
 ```bash
 cd /Users/vuhaituan/Downloads/CO3094-weaprous2
-python start_backend.py --server-ip 0.0.0.0 --server-port 9000
+python start_backend.py --server-ip <your-computer-ip> --server-port 9000
 ```
 
-#### **Bước 2: Start Proxy Server**
+#### Step 2: Start Proxy Server
 ```bash
-# Terminal mới
+# New terminal
 python start_proxy.py --server-ip 0.0.0.0 --server-port 8080
 ```
 
-#### **Bước 3: Test với Browser**
-1. Mở browser (Incognito mode khuyến nghị)
-2. Truy cập: `http://127.0.0.1:8080/`
-   - ❌ Kết quả: 401 Unauthorized (chưa có cookie)
-3. Truy cập: `http://127.0.0.1:8080/login.html`
-   - ✅ Hiển thị login form
-4. Login với:
+#### Step 3: Test with Browser
+1. Open a browser (Incognito mode recommended)
+2. Visit: `http://<your-computer-ip>:8080/`
+   - ❌ Expected: 401 Unauthorized (no cookie yet)
+3. Visit: `http://<your-computer-ip>:8080/login.html`
+   - ✅ Shows login form
+4. Login with:
    - Username: `admin`
    - Password: `password`
-   - ✅ Kết quả: Set cookie và redirect đến index.html
-5. Truy cập lại: `http://127.0.0.1:8080/`
-   - ✅ Kết quả: 200 OK (có cookie hợp lệ)
+   - ✅ Expected: Set cookie and redirect to index.html
+5. Visit again: `http://<your-computer-ip>:8080/`
+   - ✅ Expected: 200 OK (valid cookie)
 
-#### **Bước 4: Test với curl**
+#### Step 4: Test with curl
 ```bash
-# Test 1: Truy cập không có cookie
-curl -v http://127.0.0.1:8080/
+# Test 1: Without cookie
+curl -v http://<your-computer-ip>:8080/
 # Expected: 401 Unauthorized
 
 # Test 2: Login
-curl -X POST http://127.0.0.1:8080/login \
+curl -X POST http://<your-computer-ip>:8080/login \
   -d "username=admin&password=password" \
   -c cookies.txt -v
 # Expected: 200 OK, Set-Cookie: auth=true
 
-# Test 3: Truy cập với cookie
-curl -b cookies.txt http://127.0.0.1:8080/
-# Expected: 200 OK, hiển thị index.html
+# Test 3: With cookie
+curl -b cookies.txt http://<your-computer-ip>:8080/
+# Expected: 200 OK, shows index.html
 ```
 
 ---
 
-### **2. Test Chat Application (Task 2)**
+### 2. Test Chat Application (Task 2)
 
-#### **Bước 1: Start Chat Tracker Server**
+#### Step 1: Start Chat Tracker Server
 ```bash
 python start_chatapp.py --server-ip 0.0.0.0 --server-port 8001
 ```
 
-**Kết quả:**
+**Expected Output:**
 ```
 ============================================================
 Starting Chat Tracker Server
@@ -173,51 +173,51 @@ Port: 8001
 [Backend] Listening on port 8001
 ```
 
-#### **Bước 2: Test APIs**
+#### Step 2: Test APIs
 ```bash
-# Test Login
+# Login
 curl -X POST http://127.0.0.1:8001/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"password"}'
 # Expected: {"status": "success", "token": "token_admin"}
 
-# Test Register
+# Register
 curl -X POST http://127.0.0.1:8001/register \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","password":"alice123"}'
 # Expected: {"status": "success", "message": "User registered successfully"}
 
-# Test Peer Registration
+# Peer Registration
 curl -X POST http://127.0.0.1:8001/submit-info \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","ip":"127.0.0.1","port":9101,"channels":["general"]}'
 # Expected: {"status": "success", "peer_id": 0, "total_peers": 1}
 
-# Test Join Channel
+# Join Channel
 curl -X POST http://127.0.0.1:8001/add-list \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","channel":"tech-talk"}'
 # Expected: {"status": "success", "channel": "tech-talk", "members": ["alice"]}
 
-# Test Get Peer List
+# Get Peer List
 curl -X POST http://127.0.0.1:8001/get-list \
   -H "Content-Type: application/json" \
   -d '{}'
 # Expected: {"status": "success", "peers": [...], "channels": {...}}
 
-# Test Server Status
+# Server Status
 curl http://127.0.0.1:8001/status
 # Expected: {"status": "online", "stats": {...}}
 ```
 
-#### **Bước 3: Start Peer Clients**
+#### Step 3: Start Peer Clients
 
-**Terminal 1 - Alice:**
+Terminal 1 - Alice:
 ```bash
 python peer_client.py --username alice --peer-port 9101 --tracker-ip 127.0.0.1 --tracker-port 8001
 ```
 
-**Trong Alice terminal:**
+In Alice terminal:
 ```
 > join general
 [Peer] Joined channel: general
@@ -231,12 +231,12 @@ Active peers:
   - bob (127.0.0.1:9102)
 ```
 
-**Terminal 2 - Bob:**
+Terminal 2 - Bob:
 ```bash
 python peer_client.py --username bob --peer-port 9102 --tracker-ip 127.0.0.1 --tracker-port 8001
 ```
 
-**Trong Bob terminal:**
+In Bob terminal:
 ```
 > join general
 
@@ -252,14 +252,14 @@ Active peers:
 [Peer] Sent message to alice: Hello Alice! This is Bob
 ```
 
-**Quay lại Alice terminal (tự động hiển thị):**
+Back to Alice terminal (auto display):
 ```
 [Peer] New P2P connection from ('127.0.0.1', xxxxx)
 [Peer] Handshake from peer: bob
 [Peer] Message from bob: Hello Alice! This is Bob
 ```
 
-**Alice reply:**
+Alice reply:
 ```
 > send bob Hi Bob! Nice to hear from you
 [Peer] Sent message to bob: Hi Bob! Nice to hear from you
@@ -269,14 +269,14 @@ Message history:
   [direct from bob] Hello Alice! This is Bob
 ```
 
-#### **Bước 4: Test Broadcast**
+#### Step 4: Test Broadcast
 
-**Terminal 3 - Charlie:**
+Terminal 3 - Charlie:
 ```bash
 python peer_client.py --username charlie --peer-port 9103 --tracker-ip 127.0.0.1 --tracker-port 8001
 ```
 
-**Trong Alice terminal:**
+In Alice terminal:
 ```
 > connect bob 127.0.0.1 9102
 > connect charlie 127.0.0.1 9103
@@ -284,5 +284,5 @@ python peer_client.py --username charlie --peer-port 9103 --tracker-ip 127.0.0.1
 [Peer] Broadcasted to 2 peers: Hello everyone! This is Alice
 ```
 
-**Kết quả:**
-- Bob và Charlie đều nhận được broadcast message ✅
+**Result:**
+- Both Bob and Charlie receive the broadcast message ✅
