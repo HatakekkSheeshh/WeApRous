@@ -159,7 +159,8 @@ class Response():
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
             else:
-                handle_text_other(sub_type)
+                # TODO: handle other text types
+                base_dir = BASE_DIR+"static/"
         elif main_type == 'image':
             base_dir = BASE_DIR+"static/"
             self.headers['Content-Type']='image/{}'.format(sub_type)
@@ -197,14 +198,15 @@ class Response():
         filepath = os.path.join(base_dir, path.lstrip('/'))
 
         print("[Response] serving the object at location {}".format(filepath))
-            #
-            #  TODO: implement the step of fetch the object file
-            #        store in the return value of content
-            #
-
-        with open(filepath, 'rb') as f:
-            content = f.read()
-        return len(content), content
+        #fetch the object file 
+        # Read file content
+        try:
+            with open(filepath, 'rb') as f:
+                content = f.read()
+            return len(content), content
+        except Exception as e:
+            print("[Response] Error reading file: {}".format(e))
+            return 0, b""
 
 
     def build_response_header(self, request):
@@ -231,7 +233,7 @@ class Response():
         #
         # TODO prepare the request authentication
         #
-	# self.auth = ...
+        # self.auth = ...
                 "Date": "{}".format(datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")),
                 "Max-Forward": "10",
                 "Pragma": "no-cache",
@@ -240,16 +242,17 @@ class Response():
                 "User-Agent": "{}".format(reqhdr.get("User-Agent", "Chrome/123.0.0.0")),
             }
 
-        # Header text alignment
-            #
-            #  TODO: implement the header building to create formated
-            #        header from the provied headers
-            #
-        #
-        # TODO prepare the request authentication
-        #
-	# self.auth = ...
-        return str(fmt_header).encode('utf-8')
+        #HTTP create header and body of response
+        # Build formatted HTTP header
+        fmt_header = "HTTP/1.1 200 OK\r\n"
+        
+        for key, value in headers.items():
+            fmt_header += "{}: {}\r\n".format(key, value)
+        
+        # Empty line to separate headers from body
+        fmt_header += "\r\n"
+        
+        return fmt_header.encode('utf-8')
 
 
     def build_notfound(self):

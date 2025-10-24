@@ -113,15 +113,22 @@ class Request():
 
         self.headers = self.prepare_headers(request)
         cookies = self.headers.get('cookie', '')
-            #
-            #  TODO: implement the cookie function here
-            #        by parsing the header            #
+        #cookies parse
+        # Parse cookie string into dictionary
+        if cookies:
+            self.cookies = {}
+            for cookie_pair in cookies.split(';'):
+                cookie_pair = cookie_pair.strip()
+                if '=' in cookie_pair:
+                    key, value = cookie_pair.split('=', 1)
+                    self.cookies[key.strip()] = value.strip()
+        else:
+            self.cookies = {}
 
         return
 
     def prepare_body(self, data, files, json=None):
         self.prepare_content_length(self.body)
-        body = data or files    # adjusted by Hieu
         self.body = body
         #
         # TODO prepare the request authentication
@@ -135,7 +142,7 @@ class Request():
         #
         # TODO prepare the request authentication
         #
-	# self.auth = ...
+        # self.auth = ...
         return
 
 
@@ -143,8 +150,9 @@ class Request():
         #
         # TODO prepare the request authentication
         #
-	# self.auth = ...
+        # self.auth = ...
         return
 
     def prepare_cookies(self, cookies):
             self.headers["Cookie"] = cookies
+
