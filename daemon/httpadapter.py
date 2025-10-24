@@ -106,15 +106,155 @@ class HttpAdapter:
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
 
-        # Handle request hook
+        # ========== TASK 2: WEAPROUS ROUTE HANDLERS (PRIORITY) ==========
+        # Check if there's a WeApRous route handler first
         if req.hook:
-            print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = "bksysnet",body = "get in touch")
-            #
-            # TODO: handle for App hook here
-            #
+            print("[HttpAdapter] WeApRous hook in route-path METHOD {} PATH {}".format(req.hook._route_path, req.hook._route_methods))
+            
+            # Extract request body for JSON APIs
+            body_data = ""
+            if '\r\n\r\n' in msg:
+                body_data = msg.split('\r\n\r\n', 1)[1]
+            
+            # Call the route handler
+            try:
+                result = req.hook(headers=req.headers, body=body_data)
+                
+                # Build JSON response
+                if result:
+                    response_body = result if isinstance(result, str) else str(result)
+                else:
+                    response_body = '{"status": "success"}'
+                
+                response_header = (
+                    "HTTP/1.1 200 OK\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Content-Length: {}\r\n"
+                    "Access-Control-Allow-Origin: *\r\n"
+                    "\r\n"
+                ).format(len(response_body))
+                
+                response = response_header + response_body
+                conn.sendall(response.encode('utf-8'))
+                conn.close()
+                return
+                
+            except Exception as e:
+                print("[HttpAdapter] Error in route handler: {}".format(e))
+                error_response = '{{"status": "error", "message": "{}"}}'.format(str(e))
+                response_header = (
+                    "HTTP/1.1 500 Internal Server Error\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Content-Length: {}\r\n"
+                    "\r\n"
+                ).format(len(error_response))
+                
+                response = response_header + error_response
+                conn.sendall(response.encode('utf-8'))
+                conn.close()
+                return
+        
+        # ========== TASK 1: COOKIE SESSION AUTHENTICATION ==========
+        # Only apply cookie session for non-WeApRous requests (HTTP server)
+        
+        # Task 1A: Handle POST /login - Authentication
+        if req.method == 'POST' and req.path == '/login':
+            # Parse POST body to extract username and password
+            post_data = {}
+            if '\r\n\r\n' in msg:
+                body_part = msg.split('\r\n\r\n', 1)[1]
+                for pair in body_part.split('&'):
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        post_data[key] = value
+            
+            username = post_data.get('username', '')
+            password = post_data.get('password', '')
+            
+            print("[HttpAdapter] Login attempt: username={}".format(username))
+            
+            # Validate credentials (username=admin, password=password)
+            if username == 'admin' and password == 'password':
+                # LOGIN SUCCESS - Serve index.html with Set-Cookie
+                print("[HttpAdapter] Login successful")
+                try:
+                    with open('www/index.html', 'rb') as f:
+                        content = f.read()
+                    
+                    response_header = (
+                        "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Content-Length: {}\r\n"
+                        "Set-Cookie: auth=true; Path=/\r\n"
+                        "\r\n"
+                    ).format(len(content))
+                    
+                    response = response_header.encode() + content
+                    conn.sendall(response)
+                    conn.close()
+                    return
+                except Exception as e:
+                    print("[HttpAdapter] Error reading index.html: {}".format(e))
+            else:
+                # LOGIN FAILED - Return 401 Unauthorized
+                print("[HttpAdapter] Login failed - Invalid credentials")
+                error_html = (
+                    "<html>"
+                    "<head><title>Login Failed</title></head>"
+                    "<body>"
+                    "<h1>401 Unauthorized</h1>"
+                    "<p>Invalid username or password</p>"
+                    "<p><a href='/login.html'>Try again</a></p>"
+                    "</body>"
+                    "</html>"
+                )
+                
+                response = (
+                    "HTTP/1.1 401 Unauthorized\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: {}\r\n"
+                    "\r\n"
+                    "{}"
+                ).format(len(error_html), error_html)
+                
+                conn.sendall(response.encode())
+                conn.close()
+                return
+        
+        # Task 1B: Check cookie for protected pages (/ or /index.html)
+        if req.path in ['/', '/index.html']:
+            cookies = getattr(req, 'cookies', {})
+            
+            if cookies.get('auth') != 'true':
+                # NO VALID COOKIE - Return 401 Unauthorized
+                print("[HttpAdapter] Access denied - No valid cookie")
+                error_html = (
+                    "<html>"
+                    "<head><title>Unauthorized</title></head>"
+                    "<body>"
+                    "<h1>401 Unauthorized</h1>"
+                    "<p>Please <a href='/login.html'>login</a> first</p>"
+                    "</body>"
+                    "</html>"
+                )
+                
+                response = (
+                    "HTTP/1.1 401 Unauthorized\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: {}\r\n"
+                    "\r\n"
+                    "{}"
+                ).format(len(error_html), error_html)
+                
+                conn.sendall(response.encode())
+                conn.close()
+                return
+            else:
+                print("[HttpAdapter] Access granted - Valid cookie found")
+        
+        # ========== END TASK 1 ==========
 
-        # Build response
+        # Build response for regular HTTP requests
         response = resp.build_response(req)
 
         #print(response)
