@@ -201,6 +201,9 @@ class Response():
             #  TODO: implement the step of fetch the object file
             #        store in the return value of content
             #
+
+        with open(filepath, 'rb') as f:
+            content = f.read()
         return len(content), content
 
 

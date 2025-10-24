@@ -122,7 +122,7 @@ class HttpAdapter:
         conn.close()
 
     @property
-    def extract_cookies(self, req, resp):
+    def extract_cookies(self, req: Request, resp: Response):
         """
         Build cookies from the :class:`Request <Request>` headers.
 
@@ -130,7 +130,9 @@ class HttpAdapter:
         :param resp: (Response) The res:class:`Response <Response>` object.
         :rtype: cookies - A dictionary of cookie key-value pairs.
         """
+        
         cookies = {}
+        headers = req.headers
         for header in headers:
             if header.startswith("Cookie:"):
                 cookie_str = header.split(":", 1)[1].strip()

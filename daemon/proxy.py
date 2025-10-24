@@ -35,6 +35,14 @@ from .dictionary import CaseInsensitiveDict
 
 #: A dictionary mapping hostnames to backend IP and port tuples.
 #: Used to determine routing targets for incoming requests.
+
+"""
+PROXY_PASS = {
+    "192.168.56.103:8080": ('192.168.56.103', 9000),
+    "app1.local": ('192.168.56.103', 9001),
+    "app2.local": ('192.168.56.103', 9002),
+}
+"""
 PROXY_PASS = {
     "192.168.56.103:8080": ('192.168.56.103', 9000),
     "app1.local": ('192.168.56.103', 9001),
