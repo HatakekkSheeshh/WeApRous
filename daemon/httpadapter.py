@@ -148,6 +148,9 @@ class HttpAdapter:
         resp = self.response
 
         try:
+            if req.hook:
+                # ----- Task 2: WeApRous hook (priority) or Static file -----
+                return self._send(resp, req.hook(headers=req.headers, body=req.body))
             # 1) Read from socket (minimal read; can be extended to read full Content-Length)
             raw = self._read_from_socket(conn)
 
@@ -162,9 +165,6 @@ class HttpAdapter:
             early = self._cookie_auth_guard(req)
             if early is not None:
                 return self._send(resp, early)
-
-            # ----- Task 2: WeApRous hook (priority) or Static file -----
-            return self._send(resp, self._dispatch(req, resp))
 
         except Exception as e:
             # Fallback 500 using error catalog (with a small runtime hint inside HTML comment)
