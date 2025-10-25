@@ -2,7 +2,8 @@
 import json
 import threading
 from daemon.weaprous import WeApRous
-from  daemon.request import Request  
+# from daemon.httpadapter import HttpAdapter
+from daemon.errors import ERRORS
 
 # Initialize the WeApRous app
 app = WeApRous()
@@ -14,7 +15,7 @@ users_credentials = {"admin": "password"}  # Simple user database
 peers_lock = threading.Lock()  # Thread-safe access to peers_list
 channels_lock = threading.Lock()  # Thread-safe access to channels_list
 
-@app.route(path='/login', methods=['POST'])
+@app.route(path='/api/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
     Handle user login via POST request.
@@ -26,6 +27,8 @@ def login(headers="guest", body="anonymous"):
     :param body (str): The request body or login payload.
     """
     print("[SampleApp] Logging in {} to {}".format(headers, body))
+
+    e = ERRORS["login_failed"]
     try:
         # Parse JSON body
         data = json.loads(body) if body and body != "anonymous" else {}
@@ -37,16 +40,18 @@ def login(headers="guest", body="anonymous"):
         # Validate credentials
         if username in users_credentials and users_credentials[username] == password:
             response = {
-                "status": "success",
+                "status": "200 OK",
                 "message": "Login successful",
                 "username": username,
+                "headers": {"Access-Control-Allow-Origin": "*"},
                 "token": "token_{}".format(username)  # Simple token generation
             }
             print("[SampleApp] Login successful for user: {}".format(username))
         else:
             response = {
-                "status": "failed",
-                "message": "Invalid username or password"
+                "status": e["status"],
+                "Content-Type": e["content_type"],
+                "body": e["body"]
             }
             print("[SampleApp] Login failed for user: {}".format(username))
         

@@ -22,52 +22,8 @@ Request and Response objects to handle client-server communication.
 
 from .request import Request
 from .response import Response
-from .dictionary import CaseInsensitiveDict
-
-ERRORS = CaseInsensitiveDict({
-    "unauthorized": {
-        "status": "401 Unauthorized",
-        "content_type": "text/html; charset=utf-8",
-        "headers": {},
-        "body": (
-            "<html><head><title>401</title></head>"
-            "<body><h1>401 Unauthorized</h1>"
-            "<p>Please <a href='/login.html'>login</a> first</p>"
-            "</body></html>"
-        ).encode("utf-8"),
-    },
-    "login_failed": {
-        "status": "401 Unauthorized",
-        "content_type": "text/html; charset=utf-8",
-        "headers": {},
-        "body": (
-            "<html><head><title>Login Failed</title></head>"
-            "<body><h1>401 Unauthorized</h1>"
-            "<p>Invalid username or password</p>"
-            "<p><a href='/login.html'>Try again</a></p>"
-            "</body></html>"
-        ).encode("utf-8"),
-    },
-    "not_found": {
-        "status": "404 Not Found",
-        "content_type": "text/html; charset=utf-8",
-        "headers": {},
-        "body": b"<h1>404 Not Found</h1>",
-    },
-    "server_error": {
-        "status": "500 Internal Server Error",
-        "content_type": "text/html; charset=utf-8",
-        "headers": {},
-        "body": b"<h1>500 Internal Server Error</h1>",
-    },
-    # JSON cho API/WeApRous
-    "api_error": {
-        "status": "500 Internal Server Error",
-        "content_type": "application/json; charset=utf-8",
-        "headers": {},
-        "body": b'{"status":"error","message":"internal"}',
-    },
-})
+# from .dictionary import CaseInsensitiveDict
+from .errors import ERRORS
 
 class HttpAdapter:
     """
@@ -148,23 +104,28 @@ class HttpAdapter:
         resp = self.response
 
         try:
-            if req.hook:
-                # ----- Task 2: WeApRous hook (priority) or Static file -----
-                return self._send(resp, req.hook(headers=req.headers, body=req.body))
             # 1) Read from socket (minimal read; can be extended to read full Content-Length)
-            raw = self._read_from_socket(conn)
+            raw = self.read_from_socket(conn)
 
             # 2) Parse into Request object
-            self._parse_into_request(req, raw, routes)
+            self.parse_into_request(req, raw, routes)
+
+
+            # ----- Task 2: WeApRous hook (priority) or Static file -----
+            if req.hook:
+                # return self.send(resp, req.hook(headers=req.headers, body=req.body))
+                return self.send(resp, self.dispatch(req, resp))
+                
+            # --------------------------- Task 1 ---------------------------
 
             # ----- Task 1A: /login (bypass cookie guard) -----
             if req.method == "POST" and req.path == "/login":
-                return self._send(resp, self._handle_login(req, resp))
+                return self.send(resp, self.handle_login(req, resp))
 
             # ----- Task 1B: Cookie guard for "/" and "/index.html" -----
-            early = self._cookie_auth_guard(req)
+            early = self.cookie_auth_guard(req)
             if early is not None:
-                return self._send(resp, early)
+                return self.send(resp, early)
 
         except Exception as e:
             # Fallback 500 using error catalog (with a small runtime hint inside HTML comment)
@@ -184,7 +145,7 @@ class HttpAdapter:
 
     # -------------------- I/O --------------------
 
-    def _read_from_socket(self, conn) -> str:
+    def read_from_socket(self, conn) -> str:
         """
         Minimal read: one recv() call. For larger bodies, extend to loop until Content-Length is satisfied.
         """
@@ -192,7 +153,7 @@ class HttpAdapter:
 
     # -------------------- Parse --------------------
 
-    def _parse_into_request(self, req, raw: str, routes):
+    def parse_into_request(self, req, raw: str, routes):
         """
         Let Request.parse do the heavy-lifting; then ensure req.cookies and req.body exist.
         """
@@ -203,7 +164,7 @@ class HttpAdapter:
 
     # -------------------- Task 1: Cookie Session --------------------
 
-    def _handle_login(self, req, resp):
+    def handle_login(self, req, resp):
         """
         POST /login as per assignment:
         - Accept simple form urlencoded 'username=...&password=...'
@@ -234,7 +195,7 @@ class HttpAdapter:
         e = ERRORS["login_failed"]
         return (e["status"], {"Content-Type": e["content_type"], **e["headers"]}, e["body"])
 
-    def _cookie_auth_guard(self, req):
+    def cookie_auth_guard(self, req):
         """
         Protect "/" and "/index.html" as per assignment: require Cookie 'auth=true'.
         Return a (status, headers, body) triple to short-circuit, or None to continue.
@@ -247,17 +208,17 @@ class HttpAdapter:
 
     # -------------------- Task 2: WeApRous & Static --------------------
 
-    def _dispatch(self, req, resp):
+    def dispatch(self, req, resp):
         """
         Dispatch priority:
         1) WeApRous route hook if available
         2) Static file pipeline (default)
         """
         if req.hook:
-            return self._handle_weaprous(req, resp)
-        return self._handle_static(req, resp)
+            return self.handle_weaprous(req, resp)
+        return self.handle_static(req, resp)
 
-    def _handle_weaprous(self, req, resp):
+    def handle_weaprous(self, req, resp):
         """
         Execute a route hook (callable) injected via routes mapping in Request.prepare().
         Result normalization:
@@ -316,7 +277,7 @@ class HttpAdapter:
                     {"Content-Type": "application/json; charset=utf-8"},
                     msg)
 
-    def _handle_static(self, req, resp):
+    def handle_static(self, req, resp):
         """
         Default static pipeline: reuse existing Response.build_response(req),
         which already determines base dir and content type for files.
@@ -326,7 +287,7 @@ class HttpAdapter:
 
     # -------------------- Send --------------------
 
-    def _send(self, resp, triple):
+    def send(self, resp, triple):
         """
         Send a (status, headers, body) triple to the client.
         If status is "__RAW__", send bytes as-is (already composed).
