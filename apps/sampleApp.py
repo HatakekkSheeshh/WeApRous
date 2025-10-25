@@ -1,7 +1,8 @@
 # Example usage
 import json
-
+import threading
 from daemon.weaprous import WeApRous
+from  daemon.request import Request  
 
 # Initialize the WeApRous app
 app = WeApRous()
@@ -13,7 +14,7 @@ users_credentials = {"admin": "password"}  # Simple user database
 peers_lock = threading.Lock()  # Thread-safe access to peers_list
 channels_lock = threading.Lock()  # Thread-safe access to channels_list
 
-@app.route(path='/login', methods=['POST'])
+@app.route(path='/api/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
     Handle user login via POST request.

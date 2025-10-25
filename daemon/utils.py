@@ -10,7 +10,7 @@
 # while attending the course
 #
 
-from urlparse import urlparse
+from urllib.parse import urlparse, unquote
 
 def get_auth_from_url(url):
     """Given a url with authentication components, extract them into a tuple of
@@ -19,10 +19,14 @@ def get_auth_from_url(url):
     :rtype: (str,str)
     """
     parsed = urlparse(url)
-
     try:
         auth = (unquote(parsed.username), unquote(parsed.password))
     except (AttributeError, TypeError):
         auth = ("", "")
 
     return auth
+
+"""
+a = get_auth_from_url("http://admin:password@192.168.1.12:8080/")
+print(a) -> ('admin', 'password')
+"""

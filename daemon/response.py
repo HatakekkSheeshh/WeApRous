@@ -147,40 +147,55 @@ class Response():
         :raises ValueError: If the MIME type is unsupported.
         """
         
-        base_dir = ""
+        if not isinstance(mime_type, str) or '/' not in mime_type:
+            raise ValueError("Invalid MIME type format: {!r}".format(mime_type))
 
-        # Processing mime_type based on main_type and sub_type
         main_type, sub_type = mime_type.split('/', 1)
-        print("[Response] processing MIME main_type={} sub_type={}".format(main_type,sub_type))
-        if main_type == 'text':
-            self.headers['Content-Type']='text/{}'.format(sub_type)
-            if sub_type == 'plain' or sub_type == 'css':
-                base_dir = BASE_DIR+"static/"
-            elif sub_type == 'html':
-                base_dir = BASE_DIR+"www/"
-            else:
-                # TODO: handle other text types
-                base_dir = BASE_DIR+"static/"
-        elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
-            self.headers['Content-Type']='image/{}'.format(sub_type)
-        elif main_type == 'application':
-            base_dir = BASE_DIR+"apps/"
-            self.headers['Content-Type']='application/{}'.format(sub_type)
-        #
-        #  TODO: process other mime_type
-        #        application/xml       
-        #        application/zip
-        #        ...
-        #        text/csv
-        #        text/xml
-        #        ...
-        #        video/mp4 
-        #        video/mpeg
-        #        ...
-        #
+        main_type, sub_type = main_type.strip().lower(), sub_type.strip().lower()
+        print("[Response] processing MIME main_type={} sub_type={}".format(main_type, sub_type))
+
+        # Ensure headers dict exists
+        if not hasattr(self, "headers") or self.headers is None:
+            self.headers = {}
+
+        # Choose base directory via a mapping (override as needed)
+        # NOTE: Keep www/ for html, static/ for assets, apps/ for app bundles.
+        base_map = {
+            "text/html":     os.path.join(BASE_DIR, "www"),
+            "text/css":      os.path.join(BASE_DIR, "static"),
+            "text/plain":    os.path.join(BASE_DIR, "static"),
+            "text/javascript": os.path.join(BASE_DIR, "static"),
+            "application/javascript": os.path.join(BASE_DIR, "static"),
+            "image":         os.path.join(BASE_DIR, "static"),
+            "font":          os.path.join(BASE_DIR, "static"),
+            "audio":         os.path.join(BASE_DIR, "static"),
+            "video":         os.path.join(BASE_DIR, "static"),
+            # For app payloads served as files (e.g., zip, wasm):
+            "application":   os.path.join(BASE_DIR, "apps"),
+        }
+
+        # Decide base_dir
+        full = f"{main_type}/{sub_type}"
+        if full in base_map:
+            base_dir = base_map[full]
+        elif main_type in base_map:
+            base_dir = base_map[main_type]
         else:
-            raise ValueError("Invalid MEME type: main_type={} sub_type={}".format(main_type,sub_type))
+            # Fallback to static for unknown types
+            base_dir = os.path.join(BASE_DIR, "static")
+
+        # Decide Content-Type header
+        # Add charset for text/* (except already has charset, if you later append one)
+        if main_type == "text":
+            self.headers["Content-Type"] = f"{full}; charset={"utf-8"}"
+        elif main_type == "application" and sub_type in {"json", "xml"}:
+            # These are usually API responses; still set correctly
+            self.headers["Content-Type"] = full
+        elif main_type in {"image", "audio", "video", "font"}:
+            self.headers["Content-Type"] = full
+        else:
+            # Safe default
+            self.headers["Content-Type"] = full or "application/octet-stream"
 
         return base_dir
 
@@ -305,3 +320,25 @@ class Response():
         self._header = self.build_response_header(request)
 
         return self._header + self._content
+
+
+    def compose(self, status: str = "200 OK", headers: dict | None = None, body: bytes | str = b""):
+        """
+        Build a full HTTP response bytes from status, headers and body.
+        This keeps one unified way to return responses from handlers.
+        """
+        headers = headers or {}
+        # Normalize body into bytes
+        if isinstance(body, str):
+            body = body.encode("utf-8", "ignore")
+
+        # Ensure essential headers
+        if "Content-Length" not in headers:
+            headers["Content-Length"] = str(len(body))
+        if "Connection" not in headers:
+            headers["Connection"] = "close"
+
+        # Status-Line + headers
+        status_line = f"HTTP/1.1 {status}\r\n"
+        head = status_line + "".join(f"{k}: {v}\r\n" for k, v in headers.items()) + "\r\n"
+        return head.encode("utf-8") + body
