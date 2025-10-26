@@ -1,6 +1,22 @@
-from .dictionary import CaseInsensitiveDict
+# dictionary.py
+from .dictionary import CaseInsensitiveDict   
 
-ERRORS = CaseInsensitiveDict({
+RESP_TEMPLATES = CaseInsensitiveDict({
+    # ---- Success ----
+    "api_ok": {
+        "status": "200 OK",
+        "content_type": "application/json; charset=utf-8",
+        "headers": {},
+        "body": b'{"status":"success"}',  # minimal default envelope
+    },
+    "ok_html": {
+        "status": "200 OK",
+        "content_type": "text/html; charset=utf-8",
+        "headers": {},
+        "body": b"<h1>OK</h1>",
+    },
+
+    # ---- Error ----
     "unauthorized": {
         "status": "401 Unauthorized",
         "content_type": "text/html; charset=utf-8",
@@ -36,7 +52,6 @@ ERRORS = CaseInsensitiveDict({
         "headers": {},
         "body": b"<h1>500 Internal Server Error</h1>",
     },
-    # JSON for API/WeApRous
     "api_error": {
         "status": "500 Internal Server Error",
         "content_type": "application/json; charset=utf-8",

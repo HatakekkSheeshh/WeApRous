@@ -3,7 +3,7 @@ import json
 import threading
 from daemon.weaprous import WeApRous
 # from daemon.httpadapter import HttpAdapter
-from daemon.errors import ERRORS
+from daemon.resp_template import RESP_TEMPLATES
 
 # Initialize the WeApRous app
 app = WeApRous()
@@ -15,7 +15,16 @@ users_credentials = {"admin": "password"}  # Simple user database
 peers_lock = threading.Lock()  # Thread-safe access to peers_list
 channels_lock = threading.Lock()  # Thread-safe access to channels_list
 
-@app.route(path='/api/login', methods=['POST'])
+
+@app.route(path='login', methods=['GET'])
+def login_get():
+    return (
+        "200 OK",
+        {"Content-Type": "text/html; charset=utf-8"},
+        b"<h1>Login endpoint is alive</h1>"
+    )
+
+@app.route(path='/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
     Handle user login via POST request.
@@ -28,9 +37,11 @@ def login(headers="guest", body="anonymous"):
     """
     print("[SampleApp] Logging in {} to {}".format(headers, body))
 
-    e = ERRORS["login_failed"]
     try:
         # Parse JSON body
+        # print("[Headers] {}".format(headers))
+        # print("[Body] {}".format(body))
+
         data = json.loads(body) if body and body != "anonymous" else {}
         username = data.get("username", "")
         password = data.get("password", "")
@@ -39,27 +50,32 @@ def login(headers="guest", body="anonymous"):
         
         # Validate credentials
         if username in users_credentials and users_credentials[username] == password:
-            response = {
-                "status": "200 OK",
-                "message": "Login successful",
-                "username": username,
-                "headers": {"Access-Control-Allow-Origin": "*"},
-                "token": "token_{}".format(username)  # Simple token generation
-            }
+            e = RESP_TEMPLATES["api_ok"]
+            response = (
+                e["status"],
+                {"Content-Type": e["content_type"], **e["headers"]},
+                e["body"]
+            )
             print("[SampleApp] Login successful for user: {}".format(username))
         else:
-            response = {
-                "status": e["status"],
-                "Content-Type": e["content_type"],
-                "body": e["body"]
-            }
+            e = RESP_TEMPLATES["login_failed"]
+            response = (
+                e["status"],
+                {"Content-Type": e["content_type"]},
+                e["body"]
+            )
             print("[SampleApp] Login failed for user: {}".format(username))
         
-        return json.dumps(response)
+        return response
     
     except Exception as e:
         print("[SampleApp] Error in login: {}".format(e))
-        return json.dumps({"status": "error", "message": str(e)})
+        e = RESP_TEMPLATES["server_error"]
+        return (
+            e["status"],
+            {"Content-Type": e["content_type"], **e["headers"]},
+            e["body"]
+        )
 
 @app.route('/hello', methods=['PUT'])
 def hello(headers, body):

@@ -23,7 +23,7 @@ Request and Response objects to handle client-server communication.
 from .request import Request
 from .response import Response
 # from .dictionary import CaseInsensitiveDict
-from .errors import ERRORS
+from .resp_template import RESP_TEMPLATES
 
 class HttpAdapter:
     """
@@ -109,27 +109,25 @@ class HttpAdapter:
 
             # 2) Parse into Request object
             self.parse_into_request(req, raw, routes)
-
-
-            # ----- Task 2: WeApRous hook (priority) or Static file -----
-            if req.hook:
-                # return self.send(resp, req.hook(headers=req.headers, body=req.body))
-                return self.send(resp, self.dispatch(req, resp))
                 
             # --------------------------- Task 1 ---------------------------
 
-            # ----- Task 1A: /login (bypass cookie guard) -----
-            if req.method == "POST" and req.path == "/login":
-                return self.send(resp, self.handle_login(req, resp))
+            # ----- Task 1A: /login (bypass cookie guard) ----
+            if len(routes) <= 0:
+                if req.method == "POST" and req.path == "/login":
+                    return self.send(resp, self.handle_login(req, resp))
 
             # ----- Task 1B: Cookie guard for "/" and "/index.html" -----
             early = self.cookie_auth_guard(req)
             if early is not None:
                 return self.send(resp, early)
 
+            # ----- Task 2: WeApRous hook (priority) or Static file -----
+            return self.send(resp, self.dispatch(req, resp))
+
         except Exception as e:
             # Fallback 500 using error catalog (with a small runtime hint inside HTML comment)
-            e_tmpl = ERRORS["server_error"]
+            e_tmpl = RESP_TEMPLATES["server_error"]
             body = e_tmpl["body"] + f"\n<!-- {str(e)} -->".encode("utf-8")
             return self.conn.sendall(resp.compose(
                 status=e_tmpl["status"],
@@ -155,7 +153,9 @@ class HttpAdapter:
 
     def parse_into_request(self, req, raw: str, routes):
         """
-        Let Request.parse do the heavy-lifting; then ensure req.cookies and req.body exist.
+        routes:
+            weaprous routes: {"/login": login}
+            static routes: {}
         """
         req.prepare(raw, routes)
         # Ensure req.body is text-friendly for API handling (keep bytes in req.body; decode when needed)
@@ -180,10 +180,8 @@ class HttpAdapter:
                 creds[k] = v
 
         if creds.get("username") == "admin" and creds.get("password") == "password":
-            # Serve index.html via existing static pipeline (reuse build_response)
             req.path = "/index.html"
-            raw = resp.build_response(req)  # returns full bytes (headers + body)
-            # Extract body to re-compose with Set-Cookie
+            raw = resp.build_response(req) 
             body = raw.split(b"\r\n\r\n", 1)[1] if b"\r\n\r\n" in raw else raw
             headers = {
                 "Content-Type": "text/html; charset=utf-8",
@@ -192,7 +190,7 @@ class HttpAdapter:
             return ("200 OK", headers, body)
 
         # Wrong credentials -> 401 from catalog
-        e = ERRORS["login_failed"]
+        e = RESP_TEMPLATES["login_failed"]
         return (e["status"], {"Content-Type": e["content_type"], **e["headers"]}, e["body"])
 
     def cookie_auth_guard(self, req):
@@ -202,22 +200,11 @@ class HttpAdapter:
         """
         if req.path in ("/", "/index.html"):
             if req.cookies.get("auth") != "true":
-                e = ERRORS["unauthorized"]
+                e = RESP_TEMPLATES["unauthorized"]
                 return (e["status"], {"Content-Type": e["content_type"], **e["headers"]}, e["body"])
         return None
 
     # -------------------- Task 2: WeApRous & Static --------------------
-
-    def dispatch(self, req, resp):
-        """
-        Dispatch priority:
-        1) WeApRous route hook if available
-        2) Static file pipeline (default)
-        """
-        if req.hook:
-            return self.handle_weaprous(req, resp)
-        return self.handle_static(req, resp)
-
     def handle_weaprous(self, req, resp):
         """
         Execute a route hook (callable) injected via routes mapping in Request.prepare().
@@ -229,74 +216,82 @@ class HttpAdapter:
         Errors -> 500 JSON
         """
         import json
+
+        def to_bytes(body, current_ct=None):
+            if isinstance(body, (bytes, bytearray)):
+                return bytes(body), current_ct
+            if body is None:
+                return b'{"status":"success"}', "application/json; charset=utf-8"
+            if isinstance(body, (dict, list)):
+                return json.dumps(body).encode("utf-8"), "application/json; charset=utf-8"
+            if isinstance(body, str):
+                return body.encode("utf-8"), current_ct or "text/plain; charset=utf-8"
+            return str(body).encode("utf-8"), current_ct or "text/plain; charset=utf-8"
+
         try:
-            # Body as text for typical JSON APIs
-            body_text = req.body.decode("utf-8", "ignore") if isinstance(req.body, (bytes, bytearray)) else (req.body or "")
+            body_text = (
+                req.body.decode("utf-8", "ignore")
+                if isinstance(req.body, (bytes, bytearray))
+                else (req.body or "")
+            )
+
             result = req.hook(headers=req.headers, body=body_text)
 
-            # Normalize results
+            # Hook returned (status, headers, body)
             if isinstance(result, tuple) and len(result) == 3:
-                status, headers, body = result
-                if isinstance(body, (dict, list)):
-                    body = json.dumps(body).encode("utf-8")
-                    headers = {"Content-Type": "application/json; charset=utf-8", **(headers or {})}
-                elif isinstance(body, str):
-                    body = body.encode("utf-8")
-                headers = {"Access-Control-Allow-Origin": "*", **(headers or {})}
-                return status, headers, body
+                status, headers, payload = result
+                headers = dict(headers or {})
+                payload_bytes, ct = to_bytes(payload, headers.get("Content-Type"))
+                headers.setdefault("Content-Type", ct)
+                headers.setdefault("Access-Control-Allow-Origin", "*")
+                return status, headers, payload_bytes
 
-            if result is None:
-                payload = {"status": "success"}
-                return ("200 OK",
-                        {"Content-Type": "application/json; charset=utf-8",
-                         "Access-Control-Allow-Origin": "*"},
-                        json.dumps(payload).encode("utf-8"))
-
-            if isinstance(result, (dict, list)):
-                return ("200 OK",
-                        {"Content-Type": "application/json; charset=utf-8",
-                         "Access-Control-Allow-Origin": "*"},
-                        json.dumps(result).encode("utf-8"))
-
-            if isinstance(result, str):
-                return ("200 OK",
-                        {"Content-Type": "text/plain; charset=utf-8",
-                         "Access-Control-Allow-Origin": "*"},
-                        result.encode("utf-8"))
-
-            # Fallback: stringify unknown types
-            return ("200 OK",
-                    {"Content-Type": "text/plain; charset=utf-8",
-                     "Access-Control-Allow-Origin": "*"},
-                    str(result).encode("utf-8"))
+            # Hook returned plain value -> normalize as 200 OK JSON/text
+            payload_bytes, ct = to_bytes(result)
+            headers = {
+                "Content-Type": ct,
+                "Access-Control-Allow-Origin": "*",
+            }
+            return "200 OK", headers, payload_bytes
 
         except Exception as ex:
-            # 500 JSON with catalog style
-            msg = '{{"status":"error","message":"{}"}}'.format(str(ex)).encode("utf-8")
-            return ("500 Internal Server Error",
-                    {"Content-Type": "application/json; charset=utf-8"},
-                    msg)
+            err = {"status": "error", "error": str(ex)}
+            return (
+                "500 Internal Server Error",
+                {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                json.dumps(err).encode("utf-8"),
+            )
 
+    # -------------------- Send --------------------
+    def dispatch(self, req, resp):
+        """
+        Dispatch priority:
+        1) WeApRous route hook if available
+        2) Static file pipeline (default)
+        """
+        if req.hook:
+            return self.handle_weaprous(req, resp)
+        return self.handle_static(req, resp)
+        
     def handle_static(self, req, resp):
         """
         Default static pipeline: reuse existing Response.build_response(req),
         which already determines base dir and content type for files.
         """
-        raw = resp.build_response(req)  # already full bytes (headers+body)
+        raw = resp.build_response(req)  
         return ("__RAW__", None, raw)
-
-    # -------------------- Send --------------------
 
     def send(self, resp, triple):
         """
         Send a (status, headers, body) triple to the client.
-        If status is "__RAW__", send bytes as-is (already composed).
         """
         status, headers, body = triple
         if status == "__RAW__":
             return self.conn.sendall(body)
         return self.conn.sendall(resp.compose(status=status, headers=headers, body=body))
-
 
     # -------------------- misculary function --------------------
     def extract_cookies(self, req: Request, resp: Response):
@@ -317,7 +312,6 @@ class HttpAdapter:
                     key, value = pair.strip().split("=")
                     cookies[key] = value
         return cookies
-
 
     def build_response(self, req, resp):
         """Builds a :class:`Response <Response>` object 

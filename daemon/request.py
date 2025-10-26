@@ -94,12 +94,12 @@ class Request():
                 headers[key.strip()] = val.strip()
         return headers
 
+
     def prepare(self, request, routes=None):
         """Prepares the entire request with the given parameters."""
 
         # Prepare the request line from the request header
         self.method, self.path, self.version = self.extract_request_line(request)
-        print("[Request] {} path {} version {}".format(self.method, self.path, self.version))
 
         #
         # @bksysnet Preapring the webapp hook with WeApRous instance
@@ -110,9 +110,11 @@ class Request():
 
         # Routes / hook
         self.routes = routes or {}
+
         if self.routes:
             # Prefer (method, path), allow path-only fallback
             self.hook = self.routes.get((self.method, self.path)) or self.routes.get(self.path)
+            # print("[Request] Hook {}".format(self.hook))
 
         # Headers
         self.headers = self.prepare_headers(request)
@@ -128,7 +130,7 @@ class Request():
                     self.cookies[k.strip()] = v.strip()
 
         # Body (bytes) — sliced by Content-Length if present
-        head, body_bytes = self._split_head_body(request)
+        head, body_bytes = self.split_head_body(request)
         try:
             cl = int(self.headers.get('Content-Length', '0') or 0)
         except Exception:
@@ -174,7 +176,7 @@ class Request():
         self.headers["Cookie"] = cookies
 
 
-    def _split_head_body(self, request: str):
+    def split_head_body(self, request: str):
         """
         Split raw HTTP message into (head:str, body:bytes).
         - Accepts either str or bytes as input.

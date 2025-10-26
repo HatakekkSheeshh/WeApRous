@@ -184,17 +184,13 @@ class Response():
             # Fallback to static for unknown types
             base_dir = os.path.join(BASE_DIR, "static")
 
-        # Decide Content-Type header
-        # Add charset for text/* (except already has charset, if you later append one)
         if main_type == "text":
             self.headers["Content-Type"] = f"{full}; charset={"utf-8"}"
         elif main_type == "application" and sub_type in {"json", "xml"}:
-            # These are usually API responses; still set correctly
             self.headers["Content-Type"] = full
         elif main_type in {"image", "audio", "video", "font"}:
             self.headers["Content-Type"] = full
         else:
-            # Safe default
             self.headers["Content-Type"] = full or "application/octet-stream"
 
         return base_dir
@@ -306,17 +302,17 @@ class Response():
         base_dir = ""
 
         #If HTML, parse and serve embedded objects
-        if path.endswith('.html') or mime_type == 'text/html':
-            base_dir = self.prepare_content_type(mime_type = 'text/html')
-        elif mime_type == 'text/css':
-            base_dir = self.prepare_content_type(mime_type = 'text/css')
-        #
-        # TODO: add support objects
-        #
-        else:
+        try:
+            base_dir = self.prepare_content_type(mime_type=mime_type)
+        except ValueError:
+            print("[Response] Error preparing content type: {}".format(e))
             return self.build_notfound()
 
         c_len, self._content = self.build_content(path, base_dir)
+
+        if c_len <= 0:
+            return self.build_notfound()
+
         self._header = self.build_response_header(request)
 
         return self._header + self._content
@@ -341,4 +337,5 @@ class Response():
         # Status-Line + headers
         status_line = f"HTTP/1.1 {status}\r\n"
         head = status_line + "".join(f"{k}: {v}\r\n" for k, v in headers.items()) + "\r\n"
+
         return head.encode("utf-8") + body
