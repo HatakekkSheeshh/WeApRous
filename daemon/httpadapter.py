@@ -24,6 +24,7 @@ from .request import Request
 from .response import Response
 # from .dictionary import CaseInsensitiveDict
 from .resp_template import RESP_TEMPLATES
+from .utils import get_auth_from_url
 
 class HttpAdapter:
     """
@@ -202,6 +203,8 @@ class HttpAdapter:
             if req.cookies.get("auth") != "true":
                 e = RESP_TEMPLATES["unauthorized"]
                 return (e["status"], {"Content-Type": e["content_type"], **e["headers"]}, e["body"])
+        if req.path == "/":
+            req.path = "/index.html"
         return None
 
     # -------------------- Task 2: WeApRous & Static --------------------
@@ -237,16 +240,16 @@ class HttpAdapter:
 
             result = req.hook(headers=req.headers, body=body_text)
 
-            # Hook returned (status, headers, body)
             if isinstance(result, tuple) and len(result) == 3:
                 status, headers, payload = result
+
                 headers = dict(headers or {})
                 payload_bytes, ct = to_bytes(payload, headers.get("Content-Type"))
                 headers.setdefault("Content-Type", ct)
                 headers.setdefault("Access-Control-Allow-Origin", "*")
                 return status, headers, payload_bytes
 
-            # Hook returned plain value -> normalize as 200 OK JSON/text
+            # case 2: hook return dict/list/str/None
             payload_bytes, ct = to_bytes(result)
             headers = {
                 "Content-Type": ct,
@@ -275,7 +278,7 @@ class HttpAdapter:
         if req.hook:
             return self.handle_weaprous(req, resp)
         return self.handle_static(req, resp)
-        
+
     def handle_static(self, req, resp):
         """
         Default static pipeline: reuse existing Response.build_response(req),

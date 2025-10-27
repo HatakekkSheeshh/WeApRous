@@ -399,7 +399,7 @@
         <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
             <div class="login-box">
-                <h2>🚀 Hybrid Chat App</h2>
+                <h2> Hybrid Chat App </h2>
                 <form id="loginForm">
                     <div class="form-group">
                         <label>Username</label>
@@ -411,11 +411,11 @@
                     </div>
                     <div class="form-group">
                         <label>Tracker Server IP</label>
-                        <input type="text" id="trackerIp" value="127.0.0.1" required>
+                        <input type="text" id="trackerIp" value="192.168.1.12" required>
                     </div>
                     <div class="form-group">
                         <label>Tracker Server Port</label>
-                        <input type="number" id="trackerPort" value="8001" required>
+                        <input type="number" id="trackerPort" value="9000" required>
                     </div>
                     <div class="form-group">
                         <label>Your P2P Port</label>
@@ -544,7 +544,8 @@
                     
                     // Start periodic peer list refresh
                     setInterval(refreshPeerList, 10000);
-                } else {
+                } 
+                else {
                     showMessage('loginMessage', data.message, 'error');
                 }
             } catch (error) {

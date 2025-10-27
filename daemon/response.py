@@ -152,7 +152,7 @@ class Response():
 
         main_type, sub_type = mime_type.split('/', 1)
         main_type, sub_type = main_type.strip().lower(), sub_type.strip().lower()
-        print("[Response] processing MIME main_type={} sub_type={}".format(main_type, sub_type))
+        print("[Response] processing MIME main_type={} | sub_type={}".format(main_type, sub_type))
 
         # Ensure headers dict exists
         if not hasattr(self, "headers") or self.headers is None:
@@ -297,7 +297,7 @@ class Response():
         path = request.path
 
         mime_type = self.get_mime_type(path)
-        print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
+        print("[Response] Method: {} | path: {} | mime_type {}".format(request.method, request.path, mime_type))
 
         base_dir = ""
 
@@ -307,6 +307,9 @@ class Response():
         except ValueError:
             print("[Response] Error preparing content type: {}".format(e))
             return self.build_notfound()
+
+        print("[Response] base_dir {}".format(base_dir))
+        print("[Response] path {}".format(path))
 
         c_len, self._content = self.build_content(path, base_dir)
 

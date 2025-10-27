@@ -420,7 +420,7 @@ class PeerClient:
             request = (
                 "POST /submit-info HTTP/1.1\r\n"
                 "Host: {}:{}\r\n"
-                "Content-Type: application/json\r\n"
+                "Content-Type: text/plain\r\n"
                 "Content-Length: {}\r\n"
                 "\r\n"
                 "{}"

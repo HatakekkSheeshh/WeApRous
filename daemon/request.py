@@ -150,7 +150,6 @@ class Request():
 	# self.auth = ...
         return
 
-
     def prepare_content_length(self, body=None):
         """
         (Optional) Update the Content-Length header based on self.body.
@@ -174,7 +173,6 @@ class Request():
 
     def prepare_cookies(self, cookies):
         self.headers["Cookie"] = cookies
-
 
     def split_head_body(self, request: str):
         """

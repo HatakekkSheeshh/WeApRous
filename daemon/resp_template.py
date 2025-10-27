@@ -7,7 +7,7 @@ RESP_TEMPLATES = CaseInsensitiveDict({
         "status": "200 OK",
         "content_type": "application/json; charset=utf-8",
         "headers": {},
-        "body": b'{"status":"success"}',  # minimal default envelope
+        "body": b'{"status":"success"}',
     },
     "ok_html": {
         "status": "200 OK",
