@@ -1,0 +1,5 @@
+start proxy:	python start_proxy.py    
+sampleapp:	python start_sampleapp.py --server-ip 10.130.11.48 --server-port 9000
+start backend: 	python start_backend.py --server-ip 10.130.11.48 --server-port 9000
+start peer1:	python peer_client.py --username hieu1 --peer-ip 10.130.11.48 --peepython peer_client.py --username hieu2 --peer-ip 10.130.11.48 --peer-port 9002 --tracker-ip 10.130.11.48 --tracker-port 8080r-port 9001 --tracker-ip 10.130.11.48 --tracker-port 8080
+start peer2:	
