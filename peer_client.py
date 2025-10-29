@@ -494,7 +494,7 @@ class PeerClient:
     
     def join_channel(self, channel):
         """
-        Join a chat channel.
+        Join a chat channel and auto-connect to all peers in that channel.
         
         :param channel (str): Channel name
         :return: bool - True if successful
@@ -533,6 +533,35 @@ class PeerClient:
                     if channel not in self.channels:
                         self.channels.append(channel)
                     print("[Peer] Joined channel: {}".format(channel))
+                    
+                    # Auto-connect to all peers in this channel
+                    print("[Peer] Auto-connecting to peers in channel '{}'...".format(channel))
+                    peers = self.get_peer_list(channel)
+                    
+                    connected_count = 0
+                    for peer in peers:
+                        peer_username = peer.get("username")
+                        peer_ip = peer.get("ip")
+                        peer_port = peer.get("port")
+                        
+                        # Don't connect to yourself
+                        if peer_username == self.username:
+                            continue
+                        
+                        # Skip if already connected
+                        with self.connections_lock:
+                            if peer_username in self.peer_connections:
+                                print("[Peer] Already connected to: {}".format(peer_username))
+                                continue
+                        
+                        # Try to connect
+                        if self.connect_peer(peer_username, peer_ip, peer_port):
+                            connected_count += 1
+                            time.sleep(0.1)  # Small delay between connections
+                    
+                    print("[Peer] Auto-connected to {} peers in channel '{}'".format(
+                        connected_count, channel))
+                    
                     return True
             
             return False
@@ -663,4 +692,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
