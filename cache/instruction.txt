@@ -1,5 +1,10 @@
 start proxy:	python start_proxy.py    
-sampleapp:	python start_sampleapp.py --server-ip 10.130.11.48 --server-port 9000
-start backend: 	python start_backend.py --server-ip 10.130.11.48 --server-port 9000
-start peer1:	python peer_client.py --username hieu1 --peer-ip 10.130.11.48 --peepython peer_client.py --username hieu2 --peer-ip 10.130.11.48 --peer-port 9002 --tracker-ip 10.130.11.48 --tracker-port 8080r-port 9001 --tracker-ip 10.130.11.48 --tracker-port 8080
-start peer2:	
+sampleapp:	    python start_sampleapp.py --server-ip 172.20.10.3 --server-port 9000
+start backend: 	python start_backend.py --server-ip 172.20.10.3 --server-port 9000
+start peer1:	python peer_client.py --username hieu1 --peer-ip 172.20.10.3 --peer-port 9001 --tracker-ip 172.20.10.3 --tracker-port 8080
+start peer2:	python peer_client.py --username hieu2 --peer-ip 172.20.10.3 --peer-port 9002 --tracker-ip 172.20.10.3 --tracker-port 8080
+start peer3:	python peer_client.py --username hieu3 --peer-ip 192.168.1.12 --peer-port 9003 --tracker-ip 192.168.1.12 --tracker-port 8080
+start peer4:	python peer_client.py --username hieu4 --peer-ip 192.168.1.12 --peer-port 9004 --tracker-ip 192.168.1.12 --tracker-port 8080
+start peer5:	python peer_client.py --username hieu5 --peer-ip 192.168.1.12 --peer-port 9005 --tracker-ip 192.168.1.12 --tracker-port 8080
+start peer6:	python peer_client.py --username hieu6 --peer-ip 192.168.1.12 --peer-port 9006 --tracker-ip 192.168.1.12 --tracker-port 8080
+start peer7:	python peer_client.py --username hieu7 --peer-ip 192.168.1.12 --peer-port 9007 --tracker-ip 192.168.1.12 --tracker-port 8080
