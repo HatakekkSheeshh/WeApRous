@@ -402,6 +402,47 @@ class PeerClient:
         return sent_count
     
     
+    def send_to_channel(self, channel, message):
+        """
+        Send message to all peers in a specific channel.
+        
+        :param channel (str): Channel name
+        :param message (str): Message content
+        :return: int - Number of peers message was sent to
+        """
+        # Get peers in channel from tracker
+        peers_in_channel = self.get_peer_list(channel=channel)
+        
+        sent_count = 0
+        
+        for peer in peers_in_channel:
+            peer_username = peer.get("username")
+            
+            # Don't send to ourselves
+            if peer_username == self.username:
+                continue
+            
+            # Check if we're connected to this peer
+            with self.connections_lock:
+                if peer_username in self.peer_connections:
+                    # Send via existing P2P connection
+                    if self.send_peer(peer_username, message, channel):
+                        sent_count += 1
+                else:
+                    # Try to connect and send
+                    peer_ip = peer.get("ip")
+                    peer_port = peer.get("port")
+                    
+                    if self.connect_peer(peer_username, peer_ip, peer_port):
+                        if self.send_peer(peer_username, message, channel):
+                            sent_count += 1
+        
+        print("[Peer] Sent to {} peers in channel '{}': {}".format(
+            sent_count, channel, message))
+        
+        return sent_count
+    
+    
     def register_with_tracker(self):
         """
         Register this peer with the tracker server.
@@ -420,7 +461,7 @@ class PeerClient:
             request = (
                 "POST /submit-info HTTP/1.1\r\n"
                 "Host: {}:{}\r\n"
-                "Content-Type: text/plain\r\n"
+                "Content-Type: application/json\r\n"
                 "Content-Length: {}\r\n"
                 "\r\n"
                 "{}"
@@ -494,7 +535,7 @@ class PeerClient:
     
     def join_channel(self, channel):
         """
-        Join a chat channel and auto-connect to all peers in that channel.
+        Join a chat channel.
         
         :param channel (str): Channel name
         :return: bool - True if successful
@@ -534,32 +575,25 @@ class PeerClient:
                         self.channels.append(channel)
                     print("[Peer] Joined channel: {}".format(channel))
                     
-                    # Auto-connect to all peers in this channel
-                    print("[Peer] Auto-connecting to peers in channel '{}'...".format(channel))
-                    peers = self.get_peer_list(channel)
+                    # AUTO-CONNECT to all peers in the channel
+                    print("[Peer] Auto-connecting to peers in channel...")
+                    peers_in_channel = self.get_peer_list(channel=channel)
                     
                     connected_count = 0
-                    for peer in peers:
+                    for peer in peers_in_channel:
                         peer_username = peer.get("username")
                         peer_ip = peer.get("ip")
                         peer_port = peer.get("port")
                         
-                        # Don't connect to yourself
+                        # Don't connect to ourselves
                         if peer_username == self.username:
                             continue
                         
-                        # Skip if already connected
-                        with self.connections_lock:
-                            if peer_username in self.peer_connections:
-                                print("[Peer] Already connected to: {}".format(peer_username))
-                                continue
-                        
-                        # Try to connect
+                        # Connect to peer
                         if self.connect_peer(peer_username, peer_ip, peer_port):
                             connected_count += 1
-                            time.sleep(0.1)  # Small delay between connections
                     
-                    print("[Peer] Auto-connected to {} peers in channel '{}'".format(
+                    print("[Peer] Connected to {} peers in channel '{}'".format(
                         connected_count, channel))
                     
                     return True
@@ -623,10 +657,11 @@ def main():
     print("="*60)
     print("\nCommands:")
     print("  list - Get peer list")
-    print("  join <channel> - Join a channel")
-    print("  connect <username> <ip> <port> - Connect to a peer")
-    print("  send <username> <message> - Send message to peer")
-    print("  broadcast <message> - Broadcast to all peers")
+    print("  join <channel> - Join a channel (auto-connects to all peers)")
+    print("  connect <username> <ip> <port> - Connect to a peer manually")
+    print("  send <username> <message> - Send message to specific peer")
+    print("  sendchannel <channel> <message> - Send to all peers in channel")
+    print("  broadcast <message> - Broadcast to all connected peers")
     print("  messages - Show message history")
     print("  quit - Exit")
     print("="*60 + "\n")
@@ -667,6 +702,11 @@ def main():
                 username = parts[1]
                 message = " ".join(parts[2:])
                 peer.send_peer(username, message)
+            
+            elif command == "sendchannel" and len(parts) >= 3:
+                channel = parts[1]
+                message = " ".join(parts[2:])
+                peer.send_to_channel(channel, message)
             
             elif command == "broadcast" and len(parts) >= 2:
                 message = " ".join(parts[1:])
