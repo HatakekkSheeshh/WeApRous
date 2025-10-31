@@ -1,5 +1,7 @@
 # Assignment 1 - HTTP Server and Chat Application
 
+* Anyone accesses this repo, please give me 1 like 1 sub for my motivation. Thank you everyone so much.
+
 **HCMC University of Technology**  
 **Faculty of Computer Science & Engineering**  
 **Course: Computer Networks (CO3094)**  
