@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  /* Neo-Brutalism Theme - Light Mode (Softer, more balanced colors) */
+  [data-theme="neo-brutalism"] {
+    --background: 50 20% 98%;
+    --foreground: 0 0% 10%;
+    --card: 50 80% 85%;
+    --card-foreground: 0 0% 10%;
+    --popover: 50 80% 85%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 50 80% 85%;
+    --secondary: 280 60% 75%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 180 40% 85%;
+    --muted-foreground: 0 0% 20%;
+    --accent: 0 70% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 15%;
+    --radius: 0rem;
+    --shadow-offset: 4px;
+  }
+
+  /* Neo-Brutalism Theme - Dark Mode (Balanced dark with vibrant accents) */
+  [data-theme="neo-brutalism"].dark {
+    --background: 0 0% 8%;
+    --foreground: 50 80% 85%;
+    --card: 0 0% 12%;
+    --card-foreground: 50 80% 85%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 50 80% 85%;
+    --primary: 50 80% 85%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 280 50% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 180 30% 25%;
+    --muted-foreground: 50 50% 70%;
+    --accent: 0 70% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 80% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 50 60% 60%;
+    --input: 0 0% 15%;
+    --ring: 50 60% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  /* Dark mode is default, but can be toggled via ThemeContext */
+  html {
+    @apply dark;
+  }
+}
+
+/* Force Tailwind utilities to be available */
+@layer utilities {
+  .test-tailwind {
+    @apply bg-red-500 text-white p-4 rounded-lg;
+  }
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Color scheme based on dark/light mode */
+html.dark {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Custom scrollbar for better UX */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Neo-Brutalism Theme Styles */
+[data-theme="neo-brutalism"] {
+  --radius: 0rem !important;
+}
+
+[data-theme="neo-brutalism"] *,
+[data-theme="neo-brutalism"] *::before,
+[data-theme="neo-brutalism"] *::after {
+  border-radius: var(--radius) !important;
+}
+
+[data-theme="neo-brutalism"] .border,
+[data-theme="neo-brutalism"] [class*="border"] {
+  border-width: 2px !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+[data-theme="neo-brutalism"] button,
+[data-theme="neo-brutalism"] .btn,
+[data-theme="neo-brutalism"] [role="button"],
+[data-theme="neo-brutalism"] [type="button"] {
+  box-shadow: 4px 4px 0 0 hsl(var(--border)) !important;
+  transition: all 0.1s ease !important;
+  border: 2px solid hsl(var(--border)) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="neo-brutalism"] button:hover,
+[data-theme="neo-brutalism"] .btn:hover,
+[data-theme="neo-brutalism"] [role="button"]:hover,
+[data-theme="neo-brutalism"] [type="button"]:hover {
+  box-shadow: 6px 6px 0 0 hsl(var(--border)) !important;
+  transform: translate(-2px, -2px) !important;
+}
+
+[data-theme="neo-brutalism"] button:active,
+[data-theme="neo-brutalism"] .btn:active,
+[data-theme="neo-brutalism"] [role="button"]:active,
+[data-theme="neo-brutalism"] [type="button"]:active {
+  box-shadow: 2px 2px 0 0 hsl(var(--border)) !important;
+  transform: translate(2px, 2px) !important;
+}
+
+[data-theme="neo-brutalism"] .card,
+[data-theme="neo-brutalism"] [class*="Card"],
+[data-theme="neo-brutalism"] [class*="card"] {
+  box-shadow: 4px 4px 0 0 hsl(var(--border)) !important;
+  border-width: 2px !important;
+  border-color: hsl(var(--border)) !important;
+  border-style: solid !important;
+}
+
+[data-theme="neo-brutalism"] input,
+[data-theme="neo-brutalism"] textarea {
+  border-width: 2px !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: 2px 2px 0 0 hsl(var(--border)) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="neo-brutalism"] input:focus,
+[data-theme="neo-brutalism"] textarea:focus {
+  box-shadow: 4px 4px 0 0 hsl(var(--border)) !important;
+  transform: translate(-2px, -2px) !important;
+  outline: none !important;
+}
+
+[data-theme="neo-brutalism"] [class*="TabsTrigger"] {
+  border: 2px solid hsl(var(--border)) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="neo-brutalism"] [class*="TabsList"] {
+  border: 2px solid hsl(var(--border)) !important;
+  box-shadow: 2px 2px 0 0 hsl(var(--border)) !important;
+}
+
+[data-theme="neo-brutalism"] [class*="Avatar"] {
+  border: 2px solid hsl(var(--border)) !important;
+  box-shadow: 2px 2px 0 0 hsl(var(--border)) !important;
+}
+
+[data-theme="neo-brutalism"] [class*="Badge"] {
+  border: 2px solid hsl(var(--border)) !important;
+  box-shadow: 2px 2px 0 0 hsl(var(--border)) !important;
+  font-weight: 700 !important;
+}
+
