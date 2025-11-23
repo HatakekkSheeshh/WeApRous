@@ -196,10 +196,19 @@ def handle_client(ip, port, conn, addr, routes):
     """
     request = conn.recv(1024).decode()
     
-    # Extract hostname
+    # Extract hostname (initialize with default value)
+    hostname = None
     for line in request.splitlines():
         if line.lower().startswith('host:'):
             hostname = line.split(':', 1)[1].strip() # 192.168.1.12:8080
+            break
+    
+    # Fallback: if no Host header found, use default or extract from request
+    if hostname is None:
+        # Try to extract from request line or use default
+        # For Task 1, default to localhost:8080
+        hostname = "localhost:8080"
+        print("[Proxy] WARNING: No Host header found, using default: {}".format(hostname))
 
     print("[Proxy] {} at Host: {} Port: {}".format(addr, hostname, port))
 

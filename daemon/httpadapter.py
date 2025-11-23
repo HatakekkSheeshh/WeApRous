@@ -113,10 +113,12 @@ class HttpAdapter:
                 
             # --------------------------- Task 1 ---------------------------
 
-            # ----- Task 1A: /login (bypass cookie guard) ----
+            # ----- Task 1A: /login and /logout (bypass cookie guard) ----
             if len(routes) <= 0:
                 if req.method == "POST" and req.path == "/login":
                     return self.send(resp, self.handle_login(req, resp))
+                if req.method == "POST" and req.path == "/logout":
+                    return self.send(resp, self.handle_logout(req, resp))
 
             # ----- Task 1B: Cookie guard for "/" and "/index.html" -----
             early = self.cookie_auth_guard(req)
@@ -181,18 +183,90 @@ class HttpAdapter:
                 creds[k] = v
 
         if creds.get("username") == "admin" and creds.get("password") == "password":
-            req.path = "/index.html"
-            raw = resp.build_response(req) 
-            body = raw.split(b"\r\n\r\n", 1)[1] if b"\r\n\r\n" in raw else raw
-            headers = {
-                "Content-Type": "text/html; charset=utf-8",
-                "Set-Cookie": "auth=true; Path=/",
-            }
-            return ("200 OK", headers, body)
+            print("[HttpAdapter] Task 1 Login successful, serving index.html")
+            
+            # Directly read index.html file instead of using build_response
+            # This ensures we serve the correct file for Task 1
+            import os
+            index_path = os.path.join("www", "index.html")
+            abs_index_path = os.path.abspath(index_path)
+            
+            print("[HttpAdapter] Attempting to read index.html from: {}".format(abs_index_path))
+            
+            try:
+                if os.path.exists(abs_index_path):
+                    with open(abs_index_path, 'rb') as f:
+                        body = f.read()
+                    print("[HttpAdapter] ✓ Successfully read index.html ({} bytes)".format(len(body)))
+                    
+                    # Verify it's actually index.html (not chat.html)
+                    if b"Login Successful" in body and b"Hybrid Chat Application - Welcome" in body:
+                        print("[HttpAdapter] ✓ Confirmed: Response contains index.html content")
+                    elif b"Hybrid Chat Application" in body and b"<!DOCTYPE html>" in body and b"Login Successful" not in body:
+                        print("[HttpAdapter] ⚠️ WARNING: Response contains chat.html instead of index.html!")
+                        # Try to read index.html again with different path
+                        index_path2 = os.path.join(os.getcwd(), "www", "index.html")
+                        if os.path.exists(index_path2):
+                            with open(index_path2, 'rb') as f2:
+                                body = f2.read()
+                            print("[HttpAdapter] ✓ Re-read index.html from: {}".format(index_path2))
+                    else:
+                        print("[HttpAdapter] DEBUG: Response body preview: {}".format(body[:200]))
+                else:
+                    print("[HttpAdapter] ⚠️ index.html not found at: {}".format(abs_index_path))
+                    # Try relative path
+                    if os.path.exists(index_path):
+                        with open(index_path, 'rb') as f:
+                            body = f.read()
+                        print("[HttpAdapter] ✓ Successfully read index.html from relative path")
+                    else:
+                        raise FileNotFoundError("index.html not found at {} or {}".format(abs_index_path, index_path))
+                
+                headers = {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Set-Cookie": "auth=true; Path=/",
+                }
+                return ("200 OK", headers, body)
+            except Exception as e:
+                print("[HttpAdapter] ERROR reading index.html: {}".format(e))
+                import traceback
+                traceback.print_exc()
+                # Fallback: return simple HTML
+                fallback_html = b"""<!doctype html>
+<html><head><title>Login Successful</title></head>
+<body><h1>Login Successful!</h1>
+<p>Welcome, admin!</p>
+<p><a href="/index.html">Go to Index</a></p>
+</body></html>"""
+                headers = {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Set-Cookie": "auth=true; Path=/",
+                }
+                return ("200 OK", headers, fallback_html)
 
         # Wrong credentials -> 401 from catalog
         e = RESP_TEMPLATES["login_failed"]
         return (e["status"], {"Content-Type": e["content_type"], **e["headers"]}, e["body"])
+
+    def handle_logout(self, req, resp):
+        """
+        POST /logout: Clear the auth cookie by setting it to expire immediately.
+        """
+        print("[HttpAdapter] Logout request received")
+        
+        # Clear cookie by setting it with Max-Age=0 or Expires in the past
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "Set-Cookie": "auth=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+        
+        import json
+        body = json.dumps({"status": "success", "message": "Logged out successfully"}).encode("utf-8")
+        
+        print("[HttpAdapter] Logout successful, cookie cleared")
+        return ("200 OK", headers, body)
 
     def cookie_auth_guard(self, req):
         """

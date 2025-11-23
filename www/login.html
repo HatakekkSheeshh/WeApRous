@@ -1,8 +1,64 @@
-<html><body>
-<h1>Login</h1>
-<form method="POST" action="/login">
-  Username: <input name="username" type="text"><br>
-  Password: <input name="password" type="password"><br>
-  <input type="submit" value="Login">
-</form>
-</body></html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>Login</h1>
+    <form method="POST" action="/login" id="loginForm">
+        Username: <input name="username" type="text" value="admin"><br>
+        Password: <input name="password" type="password" value="password"><br>
+        <input type="submit" value="Login">
+    </form>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            // Determine tracker URL based on current origin
+            // If on port 8002 (WebPeer), redirect to port 8001 (Tracker)
+            // If on port 8001 (Tracker), use current origin
+            let trackerUrl;
+            const currentPort = window.location.port;
+            if (currentPort === '8002') {
+                // WebPeer Service - redirect to Tracker Server
+                trackerUrl = window.location.origin.replace(':8002', ':8001');
+            } else if (currentPort === '8001') {
+                // Tracker Server - use current origin
+                trackerUrl = window.location.origin;
+            } else {
+                // Default to Tracker Server
+                trackerUrl = 'http://localhost:8001';
+            }
+            
+            console.log('Login request to:', trackerUrl + '/login');
+            
+            fetch(trackerUrl + '/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                credentials: 'include',
+                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Login successful - redirect to chat.html
+                    window.location.href = 'chat.html';
+                } else {
+                    alert('Login failed. Please check your credentials.');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                alert('Connection error: ' + error);
+            });
+        });
+    </script>
+</body>
+</html>

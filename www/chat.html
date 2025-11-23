@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid Chat Application</title>
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap'>
     <style>
         * {
             margin: 0;
@@ -12,24 +13,49 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Tubes Cursor Background Canvas */
+        #tubes-canvas {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
         }
         
         .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            background: transparent;
             width: 100%;
             max-width: 1200px;
             height: 80vh;
             display: flex;
             overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* When only login screen is visible */
+        .container.login-only {
+            max-width: 100%;
+            height: 100vh;
+            background: transparent;
         }
         
         /* Login Screen */
@@ -39,77 +65,242 @@
             justify-content: center;
             align-items: center;
             padding: 40px;
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
         }
         
         .login-box {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            background: rgba(18, 18, 18, 0.6);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            padding: 48px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             width: 100%;
-            max-width: 400px;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 1px 0 rgba(255, 255, 255, 0.12) inset;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        .login-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .login-box::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .login-box::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .login-box::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
         }
         
         .login-box h2 {
-            color: #667eea;
-            margin-bottom: 30px;
+            color: #fff;
+            margin-bottom: 36px;
             text-align: center;
+            font-weight: 600;
+            font-size: 26px;
+            text-transform: none;
+            letter-spacing: -0.3px;
+            line-height: 1.3;
         }
         
         .form-group {
             margin-bottom: 20px;
         }
         
+        .form-group:last-of-type {
+            margin-bottom: 24px;
+        }
+
+        /* Section headings */
+        .login-box h3 {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
+            font-size: 18px;
+            text-transform: none;
+            letter-spacing: -0.2px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .login-box p {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-weight: 400;
+        }
+
+        /* Divider for peer registration form */
+        #peerRegistrationForm {
+            position: relative;
+            padding-top: 32px;
+            margin-top: 32px;
+        }
+
+        #peerRegistrationForm::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent);
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+        
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #333;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 500;
+            font-size: 14px;
+            text-transform: none;
+            letter-spacing: 0.1px;
         }
         
         .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 13px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+        }
+        
+        .form-group input:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(0, 0, 0, 0.5);
         }
         
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 
+                0 0 0 3px rgba(255, 255, 255, 0.08),
+                0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
         .btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 15px 24px;
+            background: #fff;
+            color: #000;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 15px;
             font-weight: 600;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: none;
+            letter-spacing: 0.2px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
+            background: #f8f8f8;
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
         
         .error-message {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 10px;
+            color: #ff6b6b;
+            font-size: 13px;
+            margin-top: 12px;
             text-align: center;
+            font-weight: 500;
+            padding: 10px 16px;
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.15);
+            border-radius: 8px;
         }
         
         .success-message {
-            color: #27ae60;
-            font-size: 14px;
-            margin-top: 10px;
+            color: #51cf66;
+            font-size: 13px;
+            margin-top: 12px;
             text-align: center;
+            font-weight: 500;
+            padding: 10px 16px;
+            background: rgba(81, 207, 102, 0.08);
+            border: 1px solid rgba(81, 207, 102, 0.15);
+            border-radius: 8px;
         }
         
         /* Chat Interface */
@@ -117,6 +308,16 @@
             display: none;
             width: 100%;
             flex-direction: row;
+            position: relative;
+            z-index: 1;
+            background: rgba(18, 18, 18, 0.9);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
         }
         
         .chat-interface.active {
@@ -126,15 +327,15 @@
         /* Sidebar */
         .sidebar {
             width: 300px;
-            background: #f8f9fa;
-            border-right: 1px solid #e0e0e0;
+            background: #f5f5f5;
+            border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
         }
         
         .user-info {
             padding: 20px;
-            background: #667eea;
+            background: #333;
             color: white;
         }
         
@@ -150,8 +351,8 @@
         
         .tabs {
             display: flex;
-            background: #e9ecef;
-            border-bottom: 1px solid #dee2e6;
+            background: #eee;
+            border-bottom: 1px solid #ddd;
         }
         
         .tab {
@@ -161,15 +362,13 @@
             cursor: pointer;
             background: transparent;
             border: none;
-            font-weight: 600;
             color: #666;
-            transition: all 0.3s;
         }
         
         .tab.active {
             background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
+            color: #333;
+            border-bottom: 2px solid #333;
         }
         
         .tab-content {
@@ -197,8 +396,8 @@
         }
         
         .channel-item.active, .peer-item.active {
-            border-color: #667eea;
-            background: #f0f4ff;
+            border-color: #333;
+            background: #f0f0f0;
         }
         
         .channel-item h4, .peer-item h4 {
@@ -234,8 +433,8 @@
         
         .chat-header {
             padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
         }
         
         .chat-header h3 {
@@ -253,7 +452,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            background: #f8f9fa;
+            background: white;
         }
         
         .message {
@@ -284,16 +483,16 @@
         }
         
         .message.sent .message-bubble {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #333;
             color: white;
             border-bottom-right-radius: 5px;
         }
         
         .message.received .message-bubble {
-            background: white;
+            background: #f0f0f0;
             color: #333;
             border-bottom-left-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
         }
         
         .message-time {
@@ -305,7 +504,7 @@
         .chat-input {
             padding: 20px;
             background: white;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #ddd;
             display: flex;
             gap: 10px;
         }
@@ -313,42 +512,40 @@
         .chat-input input {
             flex: 1;
             padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             font-size: 14px;
         }
         
         .chat-input input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #999;
         }
         
         .chat-input button {
             padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #333;
             color: white;
             border: none;
-            border-radius: 25px;
-            font-weight: 600;
+            border-radius: 5px;
             cursor: pointer;
-            transition: transform 0.2s;
         }
         
         .chat-input button:hover {
-            transform: translateY(-2px);
+            background: #555;
         }
         
         .peer-controls {
             padding: 15px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
+            background: #f5f5f5;
+            border-top: 1px solid #ddd;
         }
         
         .peer-controls input {
             width: 100%;
             padding: 8px;
             margin-bottom: 8px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 12px;
         }
@@ -356,13 +553,17 @@
         .peer-controls button {
             width: 100%;
             padding: 8px;
-            background: #667eea;
+            background: #333;
             color: white;
             border: none;
             border-radius: 5px;
             font-size: 12px;
             cursor: pointer;
             margin-bottom: 5px;
+        }
+        
+        .peer-controls button:hover {
+            background: #555;
         }
         
         .hidden {
@@ -373,11 +574,10 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #27ae60;
+            background: #333;
             color: white;
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: 1px solid #ddd;
             z-index: 1000;
             animation: slideIn 0.3s ease;
         }
@@ -392,38 +592,223 @@
                 opacity: 1;
             }
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .login-screen {
+                padding: 20px 10px;
+            }
+            
+            .login-box {
+                padding: 32px 24px;
+                max-width: 100%;
+                border-radius: 16px;
+            }
+            
+            .login-box h2 {
+                font-size: 24px;
+                margin-bottom: 28px;
+            }
+            
+            .login-box h3 {
+                font-size: 16px !important;
+                margin-bottom: 18px !important;
+            }
+            
+            .form-group {
+                margin-bottom: 18px;
+            }
+            
+            .form-group input {
+                padding: 13px 15px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 15px 24px;
+                font-size: 14px;
+            }
+            
+            .container {
+                height: 90vh;
+            }
+            
+            .container.login-only {
+                height: 100vh;
+            }
+            
+            /* Make grid inputs stack on tablet and mobile */
+            .login-box [style*="grid-template-columns"] {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 18px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-screen {
+                padding: 15px 8px;
+            }
+            
+            .login-box {
+                padding: 28px 20px;
+                border-radius: 16px;
+            }
+            
+            .login-box h2 {
+                font-size: 22px;
+                margin-bottom: 24px;
+            }
+            
+            .login-box h3 {
+                font-size: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            
+            .form-group {
+                margin-bottom: 16px;
+            }
+            
+            .form-group label {
+                font-size: 13px;
+                margin-bottom: 7px;
+            }
+            
+            .form-group input {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 14px 20px;
+                font-size: 14px;
+            }
+            
+            .form-group small {
+                font-size: 11px;
+            }
+
+            .error-message, .success-message {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+
+        /* Ensure canvas covers full screen and login box fits */
+        @media (max-height: 600px) {
+            .login-box {
+                max-height: 95vh;
+                padding: 24px 20px;
+            }
+            
+            .login-screen {
+                padding: 10px;
+            }
+
+            .login-box h2 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 14px;
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .login-box {
+                max-height: 90vh;
+                padding: 24px 20px;
+            }
+            
+            .login-box h2 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .login-box h3 {
+                margin-bottom: 16px !important;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Tubes Cursor Background Canvas -->
+    <canvas id="tubes-canvas"></canvas>
+    
     <div class="container">
         <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
             <div class="login-box">
                 <h2> Hybrid Chat App </h2>
-                <form id="loginForm">
+                
+                <!-- Cookie Session Login -->
+                <div id="cookieLoginForm">
+                    <form id="sessionLoginForm">
                     <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="loginUsername" required>
+                            <label>Username</label>
+                            <input type="text" id="sessionUsername" value="admin" required>
                     </div>
                     <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="loginPassword" required>
+                            <label>Password</label>
+                            <input type="password" id="sessionPassword" value="password" required>
                     </div>
+                        <button type="submit" class="btn">Login</button>
+                        <div id="sessionLoginMessage"></div>
+                    </form>
+                </div>
+                
+                <!-- Peer Registration - Only shown after cookie login -->
+                <div id="peerRegistrationForm" style="display: none;">
+                    <h3>Register Peer</h3>
+                    <p>Enter your peer information to start chatting</p>
+                    <form id="peerForm">
                     <div class="form-group">
+                            <label>Your Username (for P2P)</label>
+                            <input type="text" id="loginUsername" placeholder="e.g., alice, bob" required>
+                            <small>This is your peer identity, not the session login</small>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                            <div class="form-group" style="margin-bottom: 0;">
                         <label>Tracker Server IP</label>
-                        <input type="text" id="trackerIp" value="192.168.1.12" required>
+                                <input type="text" id="trackerIp" value="127.0.0.1" required>
                     </div>
-                    <div class="form-group">
+                            <div class="form-group" style="margin-bottom: 0;">
                         <label>Tracker Server Port</label>
-                        <input type="number" id="trackerPort" value="9000" required>
+                                <input type="number" id="trackerPort" value="8001" required>
                     </div>
+                        </div>
+                        
                     <div class="form-group">
                         <label>Your P2P Port</label>
                         <input type="number" id="peerPort" value="9100" required>
+                            <small>Port for P2P TCP socket (must be unique per peer)</small>
                     </div>
-                    <button type="submit" class="btn">Login</button>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>WebPeer Service IP</label>
+                                <input type="text" id="webpeerIp" value="127.0.0.1" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>WebPeer Service Port</label>
+                                <input type="number" id="webpeerPort" value="8002" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Register & Start Chat</button>
                     <div id="loginMessage"></div>
                 </form>
+                </div>
             </div>
         </div>
 
@@ -456,7 +841,8 @@
                         <!-- Peers will be added here -->
                     </ul>
                     <div class="peer-controls">
-                        <button onclick="refreshPeerList()">🔄 Refresh Peers</button>
+                        <button onclick="refreshPeerList()">Refresh Peers</button>
+                        <p id="peerCount" style="font-size: 12px; color: #666; margin-top: 10px; text-align: center;">0 peers</p>
                     </div>
                 </div>
             </div>
@@ -480,6 +866,89 @@
         </div>
     </div>
 
+    <script type="module">
+        // Initialize Tubes Cursor Background
+        let tubesApp = null;
+        
+        async function initTubesCursor() {
+            try {
+                const canvas = document.getElementById('tubes-canvas');
+                if (!canvas) {
+                    console.warn('Tubes canvas not found');
+                    return;
+                }
+                
+                // Import TubesCursor from CDN
+                const TubesCursorModule = await import("https://cdn.jsdelivr.net/npm/threejs-components@0.0.19/build/cursors/tubes1.min.js");
+                // Handle both default and named exports
+                const TubesCursor = TubesCursorModule.default || TubesCursorModule.TubesCursor || TubesCursorModule;
+                
+                if (typeof TubesCursor === 'function') {
+                    tubesApp = TubesCursor(canvas, {
+                        tubes: {
+                            colors: ["#f967fb", "#53bc28", "#6958d5"],
+                            lights: {
+                                intensity: 200,
+                                colors: ["#83f36e", "#fe8a2e", "#ff008a", "#60aed5"]
+                            }
+                        }
+                    });
+                    console.log('Tubes Cursor initialized successfully');
+                } else {
+                    console.error('TubesCursor is not a function');
+                }
+            } catch (error) {
+                console.error('Failed to initialize Tubes Cursor:', error);
+                // Fallback: show a subtle background if TubesCursor fails
+                const canvas = document.getElementById('tubes-canvas');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        canvas.width = window.innerWidth;
+                        canvas.height = window.innerHeight;
+                        const gradient = ctx.createRadialGradient(
+                            canvas.width / 2, canvas.height / 2, 0,
+                            canvas.width / 2, canvas.height / 2, canvas.width
+                        );
+                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.03)');
+                        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.01)');
+                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                }
+            }
+        }
+        
+        // Initialize on page load
+        function startInit() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initTubesCursor);
+            } else {
+                initTubesCursor();
+            }
+        }
+        
+        startInit();
+        
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const canvas = document.getElementById('tubes-canvas');
+                if (canvas && !tubesApp) {
+                    // Re-init fallback if TubesCursor failed
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        canvas.width = window.innerWidth;
+                        canvas.height = window.innerHeight;
+                    }
+                }
+            }, 250);
+        });
+    </script>
+    
     <script>
         // Global state
         let currentUser = {
@@ -487,6 +956,8 @@
             trackerIp: '',
             trackerPort: 0,
             peerPort: 0,
+            webpeerIp: '',
+            webpeerPort: 0,
             token: ''
         };
         
@@ -495,63 +966,167 @@
         let channels = [];
         let peers = [];
         let messages = {};  // {channel/peer: [messages]}
+        let messagePollInterval = null;  // For polling messages from peer
         
-        // Login
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        // Check if cookie session exists on page load
+        function checkCookieSession() {
+            const cookies = document.cookie.split(';');
+            const hasAuthCookie = cookies.some(cookie => cookie.trim().startsWith('auth=true'));
+            
+            if (hasAuthCookie) {
+                // Cookie session exists - skip session login and show peer registration
+                console.log('Cookie session found - showing peer registration');
+                document.getElementById('cookieLoginForm').style.display = 'none';
+                document.getElementById('peerRegistrationForm').style.display = 'block';
+            } else {
+                // No cookie - show session login
+                console.log('No cookie session - showing session login');
+                document.getElementById('cookieLoginForm').style.display = 'block';
+                document.getElementById('peerRegistrationForm').style.display = 'none';
+            }
+            updateContainerClass();
+        }
+        
+        // Check cookie on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkCookieSession();
+            // Add login-only class to container when login screen is visible
+            updateContainerClass();
+        });
+
+        // Update container class based on visible screen
+        function updateContainerClass() {
+            const loginScreen = document.getElementById('loginScreen');
+            const chatInterface = document.getElementById('chatInterface');
+            const container = document.querySelector('.container');
+            
+            if (loginScreen && chatInterface && container) {
+                const loginVisible = loginScreen.style.display !== 'none' && 
+                                    !loginScreen.classList.contains('hidden');
+                const chatVisible = chatInterface.classList.contains('active');
+                
+                if (loginVisible && !chatVisible) {
+                    container.classList.add('login-only');
+                } else {
+                    container.classList.remove('login-only');
+                }
+            }
+        }
+        
+        // Cookie Session Login
+        document.getElementById('sessionLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const sessionUsername = document.getElementById('sessionUsername').value;
+            const sessionPassword = document.getElementById('sessionPassword').value;
+            
+            try {
+                // Get tracker URL from current page origin (supports both localhost:8001 and localhost:8002)
+                const trackerUrl = window.location.origin.replace(/:\d+$/, ':8001') || 'http://127.0.0.1:8001';
+                
+                // Login with form data (Cookie session)
+                const response = await fetch(`${trackerUrl}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    credentials: 'include',  // Important for cookies
+                    body: `username=${encodeURIComponent(sessionUsername)}&password=${encodeURIComponent(sessionPassword)}`
+                });
+                
+                if (response.ok) {
+                    // Cookie session login successful - reload page to show peer registration
+                    window.location.reload();
+                } else {
+                    showMessage('sessionLoginMessage', 'Invalid username or password', 'error');
+                }
+            } catch (error) {
+                showMessage('sessionLoginMessage', 'Connection error: ' + error, 'error');
+            }
+        });
+        
+        // Peer Registration - Only username needed
+        document.getElementById('peerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
             const trackerIp = document.getElementById('trackerIp').value;
             const trackerPort = parseInt(document.getElementById('trackerPort').value);
             const peerPort = parseInt(document.getElementById('peerPort').value);
+            const webpeerIp = document.getElementById('webpeerIp').value;
+            const webpeerPort = parseInt(document.getElementById('webpeerPort').value);
+            
+            if (!username) {
+                showMessage('loginMessage', 'Please enter your peer username', 'error');
+                return;
+            }
             
             try {
-                // Login to tracker
-                const response = await fetch(`http://${trackerIp}:${trackerPort}/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
+                // Register peer with tracker (no password needed)
                     currentUser = {
                         username: username,
                         trackerIp: trackerIp,
                         trackerPort: trackerPort,
                         peerPort: peerPort,
-                        token: data.token
+                    webpeerIp: webpeerIp,
+                    webpeerPort: webpeerPort,
+                    token: ''  // Not needed for peer registration
                     };
                     
-                    // Register peer info
+                // Initialize peer through WebPeer service
+                await initWebPeer();
+                
+                // Register peer info with tracker
                     await registerPeer();
                     
                     // Show chat interface
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('chatInterface').classList.add('active');
+                    updateContainerClass();
                     
                     document.getElementById('currentUsername').textContent = username;
-                    document.getElementById('peerAddress').textContent = `P2P: 0.0.0.0:${peerPort}`;
+                document.getElementById('peerAddress').textContent = `P2P: 127.0.0.1:${peerPort}`;
                     
-                    showNotification('Login successful!');
+                showNotification('Peer registered! P2P enabled!');
                     
                     // Start periodic peer list refresh
                     setInterval(refreshPeerList, 10000);
-                } 
-                else {
-                    showMessage('loginMessage', data.message, 'error');
-                }
+                
+                // Start message polling
+                startMessagePolling();
             } catch (error) {
-                showMessage('loginMessage', 'Connection error: ' + error, 'error');
+                showMessage('loginMessage', 'Error: ' + error.message, 'error');
+                console.error('Peer registration error:', error);
             }
         });
+        
+        // Initialize peer through WebPeer service
+        async function initWebPeer() {
+            try {
+                const response = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/init-peer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        peer_ip: '127.0.0.1',  // Use localhost for P2P
+                        peer_port: currentUser.peerPort,
+                        tracker_ip: currentUser.trackerIp,
+                        tracker_port: currentUser.trackerPort
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    console.log('Peer initialized via WebPeer service');
+                } else {
+                    console.error('Failed to initialize peer:', data.message);
+                }
+            } catch (error) {
+                console.error('Failed to initialize peer:', error);
+            }
+        }
         
         // Register peer with tracker
         async function registerPeer() {
@@ -563,7 +1138,7 @@
                     },
                     body: JSON.stringify({
                         username: currentUser.username,
-                        ip: '0.0.0.0',  // Browser limitation
+                        ip: '127.0.0.1',  // Use actual IP for P2P connections
                         port: currentUser.peerPort,
                         channels: channels
                     })
@@ -584,6 +1159,7 @@
             }
             
             try {
+                // Join channel via tracker
                 const response = await fetch(`http://${currentUser.trackerIp}:${currentUser.trackerPort}/add-list`, {
                     method: 'POST',
                     headers: {
@@ -598,6 +1174,23 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // Join channel via WebPeer (auto-connects to peers)
+                    const webpeerResponse = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/join-channel`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: currentUser.username,
+                            channel: channelName
+                        })
+                    });
+                    
+                    const webpeerData = await webpeerResponse.json();
+                    if (webpeerData.status === 'success') {
+                        console.log('Auto-connected to peers in channel via P2P');
+                    }
+                    
                     if (!channels.includes(channelName)) {
                         channels.push(channelName);
                         messages[channelName] = [];
@@ -605,7 +1198,7 @@
                     }
                     
                     document.getElementById('newChannelName').value = '';
-                    showNotification(`Joined channel: ${channelName}`);
+                    showNotification(`Joined channel: ${channelName} (P2P enabled)`);
                     
                     selectChannel(channelName);
                 }
@@ -649,7 +1242,13 @@
         
         // Refresh peer list
         async function refreshPeerList() {
+            if (!currentUser.username || !currentUser.trackerIp || !currentUser.trackerPort) {
+                console.log('Cannot refresh peers: user not registered');
+                return;
+            }
+            
             try {
+                console.log('Refreshing peer list...');
                 const response = await fetch(`http://${currentUser.trackerIp}:${currentUser.trackerPort}/get-list`, {
                     method: 'POST',
                     headers: {
@@ -658,11 +1257,36 @@
                     body: JSON.stringify({})
                 });
                 
+                if (!response.ok) {
+                    console.error('Failed to refresh peers: HTTP', response.status);
+                    return;
+                }
+                
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // Filter out current user from peer list
                     peers = data.peers.filter(p => p.username !== currentUser.username);
+                    console.log('Peer list refreshed:', peers.length, 'peers found');
                     updatePeerList();
+                    
+                    // Update peer count display
+                    const peerCountEl = document.getElementById('peerCount');
+                    if (peerCountEl) {
+                        peerCountEl.textContent = peers.length + ' peer' + (peers.length !== 1 ? 's' : '');
+                    }
+                    
+                    // Also update channels if available
+                    if (data.channels) {
+                        channels = Object.keys(data.channels);
+                        updateChannelList();
+                    }
+                } else {
+                    console.error('Failed to refresh peers:', data.message || 'Unknown error');
+                    const peerCountEl = document.getElementById('peerCount');
+                    if (peerCountEl) {
+                        peerCountEl.textContent = 'Error loading peers';
+                    }
                 }
             } catch (error) {
                 console.error('Failed to refresh peers:', error);
@@ -673,6 +1297,13 @@
         function updatePeerList() {
             const list = document.getElementById('peerList');
             list.innerHTML = '';
+            
+            if (peers.length === 0) {
+                const li = document.createElement('li');
+                li.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No peers available</p>';
+                list.appendChild(li);
+                return;
+            }
             
             peers.forEach(peer => {
                 const li = document.createElement('li');
@@ -692,7 +1323,7 @@
         }
         
         // Select peer
-        function selectPeer(peer) {
+        async function selectPeer(peer) {
             currentPeer = peer.username;
             currentChannel = null;
             
@@ -703,12 +1334,37 @@
                 messages[peer.username] = [];
             }
             
+            // Connect to peer via P2P through WebPeer service
+            try {
+                const response = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/connect-peer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: currentUser.username,
+                        peer_username: peer.username,
+                        peer_ip: peer.ip,
+                        peer_port: peer.port
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showNotification(`Connected to ${peer.username} via P2P`);
+                } else {
+                    console.log('Peer connection:', data.message);
+                }
+            } catch (error) {
+                console.error('Failed to connect to peer:', error);
+            }
+            
             updatePeerList();
             displayMessages(peer.username);
         }
         
         // Send message
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             
@@ -727,6 +1383,7 @@
                 messages[target] = [];
             }
             
+            // Add message to UI immediately
             messages[target].push({
                 from: currentUser.username,
                 message: text,
@@ -737,8 +1394,137 @@
             input.value = '';
             displayMessages(target);
             
-            // In real implementation, this would send via P2P
-            console.log(`Sending to ${target}: ${text}`);
+            // Send via P2P through WebPeer service
+            try {
+                if (currentPeer) {
+                    // Direct peer message
+                    const response = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/send-peer`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: currentUser.username,
+                            peer_username: currentPeer,
+                            message: text,
+                            channel: 'direct'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status !== 'success') {
+                        console.error('Failed to send P2P message:', data.message);
+                        showNotification('Failed to send message');
+                    }
+                } else if (currentChannel) {
+                    // Broadcast to channel
+                    const response = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/broadcast-peer`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: currentUser.username,
+                            message: text,
+                            channel: currentChannel
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        console.log(`Broadcasted to ${data.sent_count} peers`);
+                    } else {
+                        console.error('Failed to broadcast:', data.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('Error sending message');
+            }
+        }
+        
+        // Start polling for new messages
+        function startMessagePolling() {
+            if (messagePollInterval) {
+                clearInterval(messagePollInterval);
+            }
+            
+            messagePollInterval = setInterval(async () => {
+                if (!currentUser.username) return;
+                
+                try {
+                    const response = await fetch(`http://${currentUser.webpeerIp}:${currentUser.webpeerPort}/get-messages`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: currentUser.username,
+                            channel: currentChannel || null
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success' && data.messages) {
+                        // Update messages from peer
+                        data.messages.forEach(msg => {
+                            // For peer-to-peer messages (channel === 'direct'), use the peer's username as target
+                            // For channel messages, use channel name as target
+                            let target;
+                            if (msg.channel === 'direct' || !msg.channel) {
+                                // Peer-to-peer message: target is the other peer's username
+                                // If message is from current user, target is the peer they're chatting with
+                                // If message is from another peer, target is that peer's username
+                                if (msg.from === currentUser.username) {
+                                    // Message sent by current user - need to find the recipient
+                                    // This is tricky - we need to know who the message was sent to
+                                    // For now, we'll use the peer username if we're currently chatting with a peer
+                                    target = currentPeer || msg.from;
+                                } else {
+                                    // Message from another peer - target is that peer's username
+                                    target = msg.from;
+                                }
+                            } else {
+                                // Channel message - use channel name as target
+                                target = msg.channel;
+                            }
+                            
+                            if (!target) {
+                                console.warn('Could not determine target for message:', msg);
+                                return;
+                            }
+                            
+                            if (!messages[target]) {
+                                messages[target] = [];
+                            }
+                            
+                            // Check if message already exists
+                            const exists = messages[target].some(m => 
+                                m.from === msg.from && 
+                                m.message === msg.message && 
+                                m.time === msg.time
+                            );
+                            
+                            if (!exists) {
+                                messages[target].push({
+                                    from: msg.from,
+                                    message: msg.message,
+                                    time: msg.time,
+                                    channel: msg.channel,
+                                    sent: msg.from === currentUser.username
+                                });
+                            }
+                        });
+                        
+                        // Refresh display if current target is active
+                        if (currentChannel || currentPeer) {
+                            displayMessages(currentChannel || currentPeer);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error polling messages:', error);
+                }
+            }, 2000);  // Poll every 2 seconds
         }
         
         // Handle Enter key in message input

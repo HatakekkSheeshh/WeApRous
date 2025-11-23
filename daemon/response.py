@@ -185,7 +185,7 @@ class Response():
             base_dir = os.path.join(BASE_DIR, "static")
 
         if main_type == "text":
-            self.headers["Content-Type"] = f"{full}; charset={"utf-8"}"
+            self.headers["Content-Type"] = f"{full}; charset=utf-8"
         elif main_type == "application" and sub_type in {"json", "xml"}:
             self.headers["Content-Type"] = full
         elif main_type in {"image", "audio", "video", "font"}:

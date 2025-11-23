@@ -41,6 +41,10 @@ channels_list = {}  # Dictionary of channels: {channel_name: [usernames]}
 users_credentials = {"admin": "password"}  # Simple user database
 peers_lock = threading.Lock()  # Thread-safe access to peers_list
 channels_lock = threading.Lock()  # Thread-safe access to channels_list
+#Thread 1 add peer"alice"
+#Thread 2 add peer "bob""
+
+
 
 app = WeApRous()
 
@@ -395,5 +399,4 @@ if __name__ == "__main__":
     # Prepare and launch the chat tracker server
     app.prepare_address(ip, port)
     app.run()
-
 
